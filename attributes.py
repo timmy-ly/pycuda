@@ -1,5 +1,6 @@
 import numpy as np
 
+# precipiti attributes
 class AttributesPRECIPITI:
   def __init__(self):
     # numerical
