@@ -2,7 +2,7 @@ import numpy as np
 
 # precipiti attributes
 class AttributesPRECIPITI:
-  def __init__(self):
+  def __init__(self, nof=4):
     # numerical
     self.dtype = 'double'
     self.Nx = 256
@@ -13,7 +13,7 @@ class AttributesPRECIPITI:
     self.Ly = 256.
     self.t = 0.0
     # model
-    self.nof = 1
+    self.nof = nof
     self.v = 0.2
     self.ups0 = 0.0
     self.chi = 1.5
