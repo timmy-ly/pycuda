@@ -2,6 +2,7 @@
 
 import numpy as np
 import warnings
+from scipy.interpolate import RectBivariateSpline as rbs
 import attributes
 # import AttributesCH
 
@@ -9,6 +10,10 @@ import attributes
 class problem:
   def __init__(self):
     pass
+
+  # class sol:
+  #   def __init__(self):
+
 
   #read cuda bin file
   def readbin(self, filepath, dtype, nof, Nx, Ny):
@@ -20,6 +25,7 @@ class problem:
       array = array.astype('double')
     array = array.reshape((nof*Nx,Ny))
     return array
+
   # read balancedata
   def readbalance(self, filepath, n=0):
     with open(filepath,'r') as f:
@@ -29,6 +35,16 @@ class problem:
     # create copy of data that keeps column 0 and removes columns
     # 1 to n, np.s_ is a slice, last argument is axis
     return np.delete(data,np.s_[1:-n],1)
+
+  def interpolate(self, array, Nx, Ny, Lx, Ly, newNx, newNy):
+    x = np.linspace(0,Lx,Nx)
+    y = np.linspace(0,Ly,Ny)
+    newx = np.linspace(0,Lx,newNx)
+    newy = np.linspace(0,Ly,newNy)
+    interpolatedobject = rbs(x,y,array,bbox=[0,Lx,0,Ly])
+    # evaluate interpolatedobject at newx, newy points
+    return interpolatedobject.__call__(newx,newy)
+
   # finite difference stencils
   def dy4_04(self, field, dy):
     # forward difference from node 0 to node 4
