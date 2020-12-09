@@ -1,8 +1,9 @@
 import numpy as np
 
-# precipiti attributes
-class AttributesPRECIPITI:
-  def __init__(self, nof=4):
+class solution:
+  def __init__(self):
+    #
+    self.OneFName = 'test'
     # numerical
     self.dtype = 'double'
     self.Nx = 256
@@ -13,30 +14,25 @@ class AttributesPRECIPITI:
     self.Ly = 256.
     self.t = 0.0
     # model
-    self.nof = nof
-    self.v = 0.2
-    self.ups0 = 0.0
-    self.chi = 1.5
-    self.ups1 = 0.0
-    self.ups2 = 1.0
-    self.ups3 = -5.0
-    self.g = 10**-3
-    self.beta = 2.0
-    self.lamb = 1.8
-    self.LAMB = 1.4
-    self.sigma = 1.8
-    # model/BC
-    self.alpha = 0.0
-    # BC
-    self.bc = 2
-    # BC/IC
-    self.h0 = 20.0
-    self.c0 = 0.3
-    self.phi0 = 1.0
-    # IC
-    self.noise = 0.0
-    self.h1 = 0.0
-    # print('hello world')
+    self.nof = 4
+      
+  @property
+  def OneFName(self):
+    return self._OneFName
+
+  @OneFName.setter
+  def OneFName(self, value):
+    if(value.endswith(('.bin','.dat'),-4)):
+      value = value[:-4]
+    self._OneFName = value
+
+  @property
+  def dtype(self):
+    return self._dtype
+
+  @dtype.setter
+  def dtype(self, value):
+    self._dtype = value
 
   @property
   def Nx(self):
@@ -77,4 +73,3 @@ class AttributesPRECIPITI:
   @nof.setter
   def nof(self, value):
     self._nof = value
-
