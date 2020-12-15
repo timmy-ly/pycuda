@@ -17,16 +17,6 @@ class solution:
     self.nof = 4
       
   @property
-  def OneFName(self):
-    return self._OneFName
-
-  @OneFName.setter
-  def OneFName(self, value):
-    if(value.endswith(('.bin','.dat'),-4)):
-      value = value[:-4]
-    self._OneFName = value
-
-  @property
   def dtype(self):
     return self._dtype
 
@@ -73,3 +63,60 @@ class solution:
   @nof.setter
   def nof(self, value):
     self._nof = value
+  
+  def dx(self, Lx=None, Nx=None):
+    if Lx is not None:
+      Lx = Lx
+    else:
+      Lx = self.Lx
+    if Nx is not None:
+      Nx = Nx
+    else:
+      Nx = self.Nx
+    return Lx/Nx
+
+  def dy(self, Ly=None, Ny=None):
+    if Ly is not None:
+      Ly = Ly
+    else:
+      Ly = self.Ly
+    if Ny is not None:
+      Ny = Ny
+    else:
+      Ny = self.Ny
+    return Ly/Ny
+  
+  # 2d arrays of y and x
+  def coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):
+    if Lx is not None:
+      Lx = Lx
+    else:
+      Lx = self.Lx
+    if Nx is not None:
+      Nx = Nx
+    else:
+      Nx = self.Nx
+    if Ly is not None:
+      Ly = Ly
+    else:
+      Ly = self.Ly
+    if Ny is not None:
+      Ny = Ny
+    else:
+      Ny = self.Ny
+    return np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

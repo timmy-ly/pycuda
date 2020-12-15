@@ -33,8 +33,12 @@ class precipiti(solution):
     self.h1 = 0.0
     if path is not None:
       self.path = path
-      self.readparams(path)
-      cuda.readbin(self)
+      try:
+        self.readparams(path)
+        self.fields = cuda.readbin(self)
+      except FileNotFoundError:
+        print("no corresponding .dat and/or .bin file")
+
 
 
 
