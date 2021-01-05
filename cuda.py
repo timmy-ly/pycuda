@@ -109,7 +109,7 @@ def dxy4_m22_m22(solobj=None, field=None, dx2=None):
          + 8.0*(-f(-1,-2) - f(-2,-1) + f(-2,1) + f(-1,2) + f(1,-2) + f(2,-1) - f(2,1) - f(1,2))
          + 64.0*(f(-1,-1) - f(-1,1) - f(1,-1) + f(1,1)) )/144.0/dx2
 # dxy fdm 4th order, 1 left node, copied from cuda code
-def dxy4_m13_m22(solobj=None, field=None, dx2=None):
+def dxy4_m22_m13(solobj=None, field=None, dx2=None):
   if solobj is not None:
     field, dx2 = solobj.field, solobj.dx2()
   def f(ix,iy, field = field):
@@ -118,7 +118,7 @@ def dxy4_m13_m22(solobj=None, field=None, dx2=None):
           - f(-2,2) + f(2,2) + 13.0*(f(-1,-1) - f(1,-1)) + 36.0*(f(-1,0) - f(1,0)) 
           + 66.0*(-f(-1,1) + f(1,1)) + 20.0*(f(-1,2) - f(1,2)) )/72.0/dx2
 # dxy fdm 4th order, 1 right node, copied from cuda code
-def dxy4_m31_m22(solobj=None, field=None, dx2=None):
+def dxy4_m22_m31(solobj=None, field=None, dx2=None):
   if solobj is not None:
     field, dx2 = solobj.field, solobj.dx2()
   def f(ix,iy, field = field):
