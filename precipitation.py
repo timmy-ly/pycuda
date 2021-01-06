@@ -1,5 +1,6 @@
 import numpy as np
-import cuda
+from pathlib import Path
+from cuda import readbin, dat
 from solution import solution
 
 
@@ -32,12 +33,12 @@ class precipiti(solution):
     self.noise = 0.0
     self.h1 = 0.0
     if path is not None:
-      self.path = path
-      try:
-        self.readparams(path)
-        self.fields = cuda.readbin(self)
-      except FileNotFoundError:
-        print("no corresponding .dat and/or .bin file")
+      self.path = Path(path)
+      # try:
+      self.readparams(self.path)
+      self.fields = readbin(self)
+      # except FileNotFoundError:
+        # print("no corresponding .dat and/or .bin file")
 
 
 
@@ -53,7 +54,8 @@ class precipiti(solution):
   def readparams(self, filepath=None):
     if filepath is None:
       filepath = self.path
-    filepath = cuda.dat(filepath)
+    filepath = dat(filepath)
+    # print(filepath)
     with open(filepath,'r') as f:
       lines = f.readlines()		#list, not array
     for i in np.arange(len(lines)):

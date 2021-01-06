@@ -1,15 +1,16 @@
 import numpy as np
 import warnings
-from scipy.interpolate import RectBivariateSpline as rbs
+from pathlib import Path
+# scipy in interpolation
 
 # methods that apply to all cuda problems
 # add .dat to filepath
 def dat(filepath):
-  return filepath + '.dat'
+  return filepath.with_suffix('.dat')
 
 # add .bin to filepath
 def bin(filepath):
-  return filepath + '.bin'
+  return filepath.with_suffix('.bin')
 
 #Error of numerical dissipation
 # @staticmethod
@@ -24,8 +25,8 @@ def E_diss(array_true, array_fd):
 def readbin(solobj=None, filepath=None, dtype=None, nof=None, Nx=None, Ny=None):
   if (solobj is not None):
     filepath, dtype, nof, Nx, Ny = solobj.path, solobj.dtype, solobj.nof, solobj.Nx, solobj.Ny
-  filepath = bin(filepath)
-  print(filepath)
+  filepath = str(bin(filepath))
+  # print(filepath)
   if dtype == 'float':
     array = np.fromfile(filepath,np.dtype('float32'))
     array = array.astype('float')
@@ -60,6 +61,7 @@ def readbalance(filepath, n=0):
 
 # interpolate array with Nx, Ny, Lx, Ly to newNx, Newy
 def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
+  from scipy.interpolate import RectBivariateSpline as rbs
   x = np.linspace(0,Lx,Nx)
   y = np.linspace(0,Ly,Ny)
   newx = np.linspace(0,Lx,newNx)
