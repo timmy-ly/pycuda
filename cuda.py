@@ -22,9 +22,9 @@ def E_diss(array_true, array_fd):
   return (std_T - std_D)**2 + (mean_T - mean_D)**2
   
 #read cuda bin file
-def readbin(solobj=None, filepath=None, dtype=None, nof=None, Nx=None, Ny=None):
+def readbin(solobj=None, filepath=None, dtype=None, Nx=None, Ny=None):
   if (solobj is not None):
-    filepath, dtype, nof, Nx, Ny = solobj.path, solobj.dtype, solobj.nof, solobj.Nx, solobj.Ny
+    filepath, dtype, Nx, Ny = solobj.path, solobj.dtype, solobj.Nx, solobj.Ny
   filepath = str(bin(filepath))
   # print(filepath)
   if dtype == 'float':
@@ -33,7 +33,7 @@ def readbin(solobj=None, filepath=None, dtype=None, nof=None, Nx=None, Ny=None):
   else:
     array = np.fromfile(filepath,np.dtype('float64'))
     array = array.astype('double')
-  array = array.reshape((nof,Nx,Ny))
+  array = array.reshape((-1,Nx,Ny))
   return array
 
 # read dat file and return value of param as a string

@@ -37,6 +37,7 @@ class precipiti(solution):
       # try:
       self.readparams(self.path)
       self.fields = readbin(self)
+      self.nof = len(self.fields)
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
 
