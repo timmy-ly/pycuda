@@ -71,6 +71,17 @@ def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
   return interpolatedobject.__call__(newx,newy)
 
 # finite difference stencils
+# ? order
+# curvature
+def curvature(solobj=None, field=None, dx=None):
+  if solobj is not None:
+    field, dx = solobj.field, solobj.dx()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( (f(1,0) - f(0,0))/np.sqrt( (f(1,0) - f(0,0))**2 + ((f(1,1) + f(0,1) - f(1,-1) - f(0,-1))**2)/16.0 ) 
+         - (f(0,0) - f(-1,0))/np.sqrt( (f(0,0) - f(-1,0))**2 + ((f(-1,1) + f(0,1) - f(-1,-1) - f(0,-1))**2)/16.0 )
+         + (f(0,1) - f(0,0))/np.sqrt( (f(0,1) - f(0,0))**2 + ((f(1,1) + f(1,0) - f(-1,1) - f(-1,0))**2)/16.0 )
+         - (f(0,0) - f(0,-1))/np.sqrt( (f(0,0) - f(0,-1))**2 + ((f(1,-1) + f(1,0) - f(-1,-1) - f(-1,0))**2)/16.0 ) )/dx
 
 # 4th order
 # dy fdm 4th order, forward, copied from cuda code
@@ -282,6 +293,20 @@ def laplace6_m33_m33(solobj=None, field=None, dx2=None):
           + 27.0*(-f(-2,0) - f(0,-2) - f(0,2) - f(2,0))
           + 270.0*(f(-1,0) + f(0,-1) + f(0,1) + f(1,0))
           - 980.0*f(0,0) )/180.0/dx2
+# dxx fdm 6th order, center
+def dxx6_m33(solobj=None, field=None, dx2=None):
+  if solobj is not None:
+    field, dx2 = solobj.field, solobj.dx2()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( 2.0*f(-3,0) - 27.0*f(-2,0) + 270.0*f(-1,0) - 490.0*f(0,0) + 270.0*f(1,0) - 27.0*f(2,0) + 2.0*f(3,0) )/180.0/dx2
+# dyy fdm 6th order, center, copied from cuda code
+def dyy6_m33(solobj=None, field=None, dx2=None):
+  if solobj is not None:
+    field, dx2 = solobj.field, solobj.dx2()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( 2.0*f(0,-3) - 27.0*f(0,-2) + 270.0*f(0,-1) - 490.0*f(0,0) + 270.0*f(0,1) - 27.0*f(0,2) + 2.0*f(0,3) )/180.0/dx2
 #dxxx fdm 6th order, center, not copied from cuda code (preprocessor function)
 def dxxx6_m44(solobj=None, field=None, dx3=None):
   if solobj is not None:
