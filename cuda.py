@@ -283,6 +283,17 @@ def dxy6_m33_m33(solobj=None, field=None, dx2=None):
          + 5.0*(f(-2,-2) - f(-2,2) - f(2,-2) + f(2,2))
          + 64.0*(-f(-2,-1) + f(-2,1) - f(-1,-2) + f(-1,2) + f(1,-2) - f(1,2) + f(2,-1) - f(2,1))
          + 380.0*(f(-1,-1) - f(-1,1) - f(1,-1) + f(1,1)) )/720.0/dx2
+# dxy fdm 6th order, center, some uneven contributions in 6thorder=0
+def dxy6_m33_m33_2(solobj=None, field=None, dx2=None):
+  if solobj is not None:
+    field, dx2 = solobj.field, solobj.dx2()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( -f(-3,-2) + f(-3,2) - f(-2,-3) + f(-2,3) + f(2,-3) - f(2,3) + f(3,-2) - f(3,2)
+         + 8.0*(f(-3,-1) - f(-3,1) + f(-1,-3) - f(-1,3) - f(1,-3) + f(1,3) - f(3,-1) + f(3,1))
+         + 13.0*(f(-2,-2) - f(-2,2) - f(2,-2) + f(2,2))
+         + 77.0*(-f(-2,-1) + f(-2,1) - f(-1,-2) + f(-1,2) + f(1,-2) - f(1,2) + f(2,-1) - f(2,1))
+         + 400.0*(f(-1,-1) - f(-1,1) - f(1,-1) + f(1,1)) )/720.0/dx2
 # laplace fdm 6th order, center, copied from cuda code
 def laplace6_m33_m33(solobj=None, field=None, dx2=None):
   if solobj is not None:
@@ -372,146 +383,11 @@ def biharm6_m44_m44(solobj=None, field=None, dx4=None):
           + 26660.0*f(0,0) )/720.0/dx4
 
 
-
-
-
-
-# manually typed stencils, not copied from cuda, should be correct but cannot check for errors done within the cuda stencils
-# # forward difference from node 0 to node 4
-# def dy4_04(solobj = None, field = None, dy = None):
-#   if solobj is not None:
-#     field, dy = solobj.field, solobj.dy()
-#   return (-25*field + 4*12*np.roll(field,-1,1) - 3*12*np.roll(field,-2,1) + 4/3*12*np.roll(field,-3,1) - 12/4*np.roll(field,-4,1))/(12*dy)
-
-# # node -1 to node 3
-# def dy4_m13(solobj = None, field = None, dy = None):
-#   if solobj is not None:
-#     field, dy = solobj.field, solobj.dy()
-#   return (-3*np.roll(field,1,1) - 10*field + 18*np.roll(field,-1,1) - 6*np.roll(field,-2,1) + np.roll(field,-3,1) )/(12*dy)
-
-# # node -2 to node 2
-# def dy4_m22(solobj = None, field = None, dy = None):
-#   if solobj is not None:
-#     field, dy = solobj.field, solobj.dy()
-#   return (np.roll(field,2,1) - 8*np.roll(field,1,1) + 0 + 8*np.roll(field,-1,1) - np.roll(field,-2,1) )/(12*dy)
-
-# # node 0 to 6
-# def dyyy4_06(solobj=None, field=None, dy3=None):
-#   if solobj is not None:
-#     field, dy3 = solobj.field, solobj.dy()**3
-#   return (-49*field + 29*8*np.roll(field,-1,1) - 461*np.roll(field,-2,1) + 62*8*np.roll(field,-3,1) - 307*np.roll(field,-4,1) + 13*8*np.roll(field,-5,1) - 15*np.roll(field,-6,1))/(8*dy3)
-
-# # node -1 to node 5
-# def dyyy4_m15(solobj=None, field=None, dy3=None):
-#   if solobj is not None:
-#     field, dy3 = solobj.field, solobj.dy()**3
-#   return (-15*np.roll(field,1,1) + 56*field - 83*np.roll(field,-1,1) + 64*np.roll(field,-2,1) -29*np.roll(field,-3,1) + 8*np.roll(field,-4,1) - np.roll(field,-5,1) )/(8*dy3)
-
-# # node -2 to node 4  
-# def dyyy4_m24(solobj=None, field=None, dy3=None):
-#   if solobj is not None:
-#     field, dy3 = solobj.field, solobj.dy()**3
-#   return (-np.roll(field,2,1) - 8*np.roll(field,1,1) + 35*field - 48*np.roll(field,-1,1) + 29*np.roll(field,-2,1) -8*np.roll(field,-3,1) + np.roll(field,-4,1) )/(8*dy3)
-
-# def dyy4_m22(solobj=None, field=None, dy2=None):
-#   if solobj is not None:
-#     field, dy2 = solobj.field, solobj.dy()**2
-#   fdm = 0
-#   center = np.array([0,2])
-#   stencil = np.array([[-1,16,-30,16,-1]])/12.0
-#   #i,j stencil index
-#   for i in np.arange(len(stencil)):
-#     for j in np.arange(len(stencil[0])):
-#       #-ix, -iy np.roll index
-#       ix, iy = i - center[0], j - center[1]
-#       fdm += stencil[i,j]*np.roll(field,(-ix,-iy),(0,1))/dy2
-#   return fdm
-
-# def laplace2_m11m11(solobj=None, field=None, dy2=None):
-#   if solobj is not None:
-#     field, dy2 = solobj.field, solobj.dy()**2
-#   fdm = 0
-#   center = np.array([1,1])
-#   stencil = np.array([[0,1,0],
-#                       [1,-4,1],
-#                       [0,1,0]])
-#   for i in np.arange(len(stencil)):
-#     for j in np.arange(len(stencil[0])):
-#       ix, iy = i - center[0], j - center[1]
-#       fdm += stencil[i,j]*np.roll(field,(-ix,-iy),(0,1))/dy2
-#   return fdm
-
-# def dxdyy4_m22m22(solobj=None, field=None, dx3=None):
-#   if solobj is not None:
-#     field, dx3 = solobj.field, solobj.dx()*solobj.dy()**2
-#   fdm = 0
-#   center = np.array([2,2])
-#   stencil = np.array([[-1,16,-30,16,-1],
-#                       [8,-128,240,-128,8],
-#                       [0,0,0,0,0],
-#                       [-8,128,-240,128,-8],
-#                       [1,-16,30,-16,1]])/144
-#   for i in np.arange(len(stencil)):
-#     for j in np.arange(len(stencil[0])):
-#       ix, iy = i - center[0], j - center[1]
-#       fdm += stencil[i,j]*np.roll(field,(-ix,-iy),(0,1))/dx3
-#   return fdm
-
-# #biharmonic fdm 4th order, inner stencil
-# def biharm4_m33m33(solobj=None, field=None, dx4=None):
-#   if solobj is not None:
-#     field, dx4 = solobj.field, solobj.dx()**4
-#   fdm = 0
-#   center = np.array([3,3])
-#   stencil = np.array([[0,0,0,-1,0,0,0],
-#                       [0,0,-1,14,-1,0,0],
-#                       [0,-1,20,-77,20,-1,0],
-#                       [-1,14,-77,184,-77,14,-1],
-#                       [0,-1,20,-77,20,-1,0],
-#                       [0,0,-1,14,-1,0,0],
-#                       [0,0,0,-1,0,0,0]])/6
-#   for i in np.arange(len(stencil)):
-#     for j in np.arange(len(stencil[0])):
-#       ix, iy = i - center[0], j - center[1]
-#       fdm += stencil[i,j]*np.roll(field,(-ix,-iy),(0,1))/dx4
-#   return fdm
-
-# #biharmonic fdm 4th order, next to left boundary
-# def biharm4_m33m25(solobj=None, field=None, dx4=None):
-#   if solobj is not None:
-#     field, dx4 = solobj.field, solobj.dx()**4
-#   fdm = 0
-#   center = np.array([3,2])
-#   stencil = np.array([[0,0,-1,0,0,0,0,0],
-#                       [0,-1,14,-1,0,0,0,0],
-#                       [-1,20,-77,20,-1,0,0,0],
-#                       [6,-49,128,-7,-42,27,-8,1],
-#                       [-1,20,-77,20,-1,0,0,0],
-#                       [0,-1,14,-1,0,0,0,0],
-#                       [0,0,-1,0,0,0,0,0]])/6
-#   for i in np.arange(len(stencil)):
-#     for j in np.arange(len(stencil[0])):
-#       ix, iy = i - center[0], j - center[1]
-#       fdm += stencil[i,j]*np.roll(field,(-ix,-iy),(0,1))/dx4
-#   return fdm
-
-# #biharmonic fdm 4th order, next to upper boundary
-# def biharm4_m25m33(solobj=None, field=None, dx4=None):
-#   if solobj is not None:
-#     field, dx4 = solobj.field, solobj.dx()**4
-#   fdm = 0
-#   center = np.array([2,3])
-#   stencil = np.array([[0,0,-1,0,0,0,0,0],
-#                       [0,-1,14,-1,0,0,0,0],
-#                       [-1,20,-77,20,-1,0,0,0],
-#                       [6,-49,128,-7,-42,27,-8,1],
-#                       [-1,20,-77,20,-1,0,0,0],
-#                       [0,-1,14,-1,0,0,0,0],
-#                       [0,0,-1,0,0,0,0,0]])/6
-#   # possibly flips previous axis 0
-#   stencil = np.rot90(stencil,axes=(1,0))
-#   for i in np.arange(len(stencil)):
-#     for j in np.arange(len(stencil[0])):
-#       ix, iy = i - center[0], j - center[1]
-#       fdm += stencil[i,j]*np.roll(field,(-ix,-iy),(0,1))/dx4
-#   return fdm
+# 8th order
+# dy fdm 8th order, center
+def dy8_m44(solobj=None, field=None, dx=None):
+  if solobj is not None:
+    field, dx = solobj.field, solobj.dx()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( 3.0*f(0,-4) - 32.0*f(0,-3) + 168.0*f(0,-2) - 672.0*f(0,-1) + 672.0*f(0,1) - 168.0*f(0,2) + 32.0*f(0,3) - 3.0*f(0,4) )/840.0/dx
