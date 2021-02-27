@@ -36,9 +36,11 @@ def readbin(solobj=None, filepath=None, dtype=None, Nx=None, Ny=None):
   array = array.reshape((-1,Nx,Ny))
   return array
 
-def get_crosssection_y(solobj):
+def get_crosssection_y(solobj, IdxX=None):
+  if(IdxX is None):
+    IdxX = solobj.Nx//2
   # get crosssection of solobj.fields
-  return solobj.fields[:,solobj.Nx//2]
+  return solobj.fields[:,IdxX]
   
 
 # read dat file and return value of param as a string
