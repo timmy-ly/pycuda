@@ -15,6 +15,7 @@ class solution:
     self.t = 0.0
     # model
     self.nof = 4
+    self.fields = None
       
   @property
   def dtype(self):
@@ -105,6 +106,14 @@ class solution:
     else:
       Ny = self.Ny
     return np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
+  # density
+  def mean(self):
+    # if(self.fields==None):
+    #   raise TypeError('fields is None, check if data is properly read. ')
+    # else:
+    # sum over first and second axis (x and y axis)
+    mean = np.sum(self.fields, axis = (1,2))/self.Nx/self.Ny
+    return mean
 
 
 
