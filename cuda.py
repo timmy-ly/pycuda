@@ -36,12 +36,6 @@ def readbin(solobj=None, filepath=None, dtype=None, Nx=None, Ny=None):
   array = array.reshape((-1,Nx,Ny))
   return array
 
-def get_crosssection_y(solobj, IdxX=None):
-  if(IdxX is None):
-    IdxX = solobj.Nx//2
-  # get crosssection of solobj.fields
-  return solobj.fields[:,IdxX]
-  
 
 # read dat file and return value of param as a string
 def readparam(param, solobj=None, filepath=None):
@@ -55,6 +49,15 @@ def readparam(param, solobj=None, filepath=None):
       param_value_str = lines[i].split()[1]
       break
   return param_value_str
+
+def get_crosssection_y(solobj, IdxX=None):
+  if(IdxX is None):
+    IdxX = solobj.Nx//2
+  # get crosssection of solobj.fields
+  return solobj.fields[:,IdxX]
+
+def mass(solobj, fieldnr):
+  return np.sum(solobj.fields[fieldnr])/(solobj.Nx*solobj.Ny)
 
 # read balancedata
 def readbalance(filepath, n=0):
