@@ -21,7 +21,6 @@ class precipiti(solution):
     self.lamb = 1.8
     self.LAMB = 1.4
     self.sigma = 1.8
-    # model/BC
     self.alpha = 0.0
     # BC
     self.bc = 1
@@ -32,6 +31,7 @@ class precipiti(solution):
     # IC
     self.noise = 0.0
     self.h1 = 0.0
+
     if path is not None:
       self.path = Path(path)
       # try:
@@ -72,10 +72,31 @@ class precipiti(solution):
         self.t = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'h0':
         self.h0 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'beta':
-        self.beta = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'g':
-        self.g = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'v':
         self.v = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'ups0':
+        self.ups0 = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'chi':
+        self.chi = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'ups1':
+        self.ups1 = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'ups2':
+        self.ups2 = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'ups3':
+        self.ups3 = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'g':
+        self.g = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'beta':
+        self.beta = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'lamb':
+        self.lamb = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'LAMB':
+        self.LAMB = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'sigma':
+        self.sigma = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'alpha':
+        self.alpha = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'c0':
+        self.c0 = float(lines[i].split()[1])
+
   
