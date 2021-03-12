@@ -218,6 +218,13 @@ def dyxx4_m22_m22(solobj=None, field=None, dx3=None):
           + 30.0*(-f(0,-2) + f(0,2))
           + 128.0*(-f(-1,-1) + f(-1,1) - f(1,-1) + f(1,1))
           + 240*(f(0,-1) - f(0,1)) )/144.0/dx3
+# dyyyy fdm 4th order, 2 left nodes
+def dyyyy4_m25(solobj=None, field=None, dx4=None):
+  if solobj is not None:
+    field, dx4 = solobj.field, solobj.dx4()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( f(0,5) - 8.0*f(0,4) + 27.0*f(0,3) - 44.0*f(0,2) + 31.0*f(0,1) - 11.0*f(0,-1) + 4.0*f(0,-2) )/6.0/dx4
 # biharm fdm 4th order, center, copied from cuda code
 def biharm4_m33_m33(solobj=None, field=None, dx4=None):
   if solobj is not None:
