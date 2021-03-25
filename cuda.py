@@ -85,7 +85,7 @@ def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
 # curvature
 def curvature(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( (f(1,0) - f(0,0))/np.sqrt( (f(1,0) - f(0,0))**2 + ((f(1,1) + f(0,1) - f(1,-1) - f(0,-1))**2)/16.0 ) 
@@ -97,35 +97,35 @@ def curvature(solobj=None, field=None, dx=None):
 # dy fdm 4th order, forward, copied from cuda code
 def dy4_04(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -25.0*f(0,0) + 48.0*f(0,1) - 36.0*f(0,2) + 16.0*f(0,3) - 3.0*f(0,4) )/12.0/dx
 # dy fdm 4th order, center, copied from cuda code
 def dy4_m22(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return (-f(0,2) + 8.0*f(0,1) - 8.0*f(0,-1) + f(0,-2) )/12.0/dx
 # dy fdm 4th order, 1 left node, copied from cuda code
 def dy4_m13(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return (-3.0*f(0,-1) - 10.0*f(0,0) + 18.0*f(0,1) - 6.0*f(0,2) + f(0,3) )/12.0/dx
 # dy fdm 4th order, 1 right node, copied from cuda code
 def dy4_m31(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(0,-3) + 6.0*f(0,-2) - 18.0*f(0,-1) + 10.0*f(0,0) + 3.0*f(0,1) )/12.0/dx
 # dxy fdm 4th order, center, copied from cuda code
 def dxy4_m22_m22(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( f(-2,-2) - f(-2,2) - f(2,-2) + f(2,2)
@@ -134,7 +134,7 @@ def dxy4_m22_m22(solobj=None, field=None, dx2=None):
 # dxy fdm 4th order, 1 left node, copied from cuda code
 def dxy4_m22_m13(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 2.0*(-f(-2,-1) + f(2,-1)) + 3.0*(-f(-2,0) + f(2,0) - f(-1,3) + f(1,3)) + 6.0*(f(-2,1) - f(2,1))
@@ -143,7 +143,7 @@ def dxy4_m22_m13(solobj=None, field=None, dx2=None):
 # dxy fdm 4th order, 1 right node, copied from cuda code
 def dxy4_m22_m31(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( f(-2,-2) - f(2,-2) + 6.0*(-f(-2,-1) + f(2,-1)) + 3.0*(f(-2,0) + f(-1,-3) - f(1,-3) - f(2,0))
@@ -152,21 +152,28 @@ def dxy4_m22_m31(solobj=None, field=None, dx2=None):
 # dyy fdm 4th order, 1 left node, copied from cuda code
 def dyy4_m14(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 10.0*f(0,-1) - 15.0*f(0,0) - 4.0*f(0,1) + 14.0*f(0,2) - 6.0*f(0,3) + f(0,4) )/12.0/dx2
+# dyy fdm 4th order, center
+def dyy4_m22(solobj=None, field=None, dx2=None):
+  if solobj is not None:
+    field, dx2 = solobj.fields, solobj.dx2()
+  def f(ix,iy, field = field):
+    return np.roll(field,(-ix,-iy),(0,1))
+  return ( -f(0,-2) + 16.0*f(0,-1) - 30.0*f(0,0) + 16.0*f(0,1) -f(0,2) )/12.0/dx2
 # dyy fdm 4th order, 1 right node, copied from cuda code
 def dyy4_m41(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( f(0,-4) - 6.0*f(0,-3) + 14.0*f(0,-2) - 4.0*f(0,-1) - 15.0*f(0,0) + 10.0*f(0,1) )/12.0/dx2
 # laplace fdm 4th order, center, copied from cuda code
 def laplace4_m22_m22(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return (-60.0*f(0,0) + 16.0*(f(1,0) + f(0,1) + f(-1,0) + f(0,-1))
@@ -174,14 +181,14 @@ def laplace4_m22_m22(solobj=None, field=None, dx2=None):
 # dyyy fdm 4th order, center, copied from cuda code
 def dyyy4_m33(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return (-f(0,3) + 8.0*f(0,2) - 13.0*f(0,1) + 13.0*f(0,-1) - 8.0*f(0,-2) + f(0,-3))/8.0/dx3
 # dyyy fdm 4th order, node -2 to 4, copied from cuda code
 def dyyy4_m24(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return (f(0,4) - 8.0*f(0,3) + 29.0*f(0,2) - 48.0*f(0,1)
@@ -189,7 +196,7 @@ def dyyy4_m24(solobj=None, field=None, dx3=None):
 # dyyy fdm 4th order, node -4 to 2, copied from cuda code
 def dyyy4_m42(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return (f(0,2) + 8.0*f(0,1) - 35.0*f(0,0) + 48.0*f(0,-1)
@@ -197,7 +204,7 @@ def dyyy4_m42(solobj=None, field=None, dx3=None):
 # dxyy fdm 4th order, center, copied from cuda code
 def dxyy4_m22_m22(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(-2,-2) - f(-2,2) + f(2,-2) + f(2,2)
@@ -209,7 +216,7 @@ def dxyy4_m22_m22(solobj=None, field=None, dx3=None):
 # dyxx fdm 4th order, center, copied from cuda code
 def dyxx4_m22_m22(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(-2,-2) + f(-2,2) - f(2,-2) + f(2,2)
@@ -221,14 +228,14 @@ def dyxx4_m22_m22(solobj=None, field=None, dx3=None):
 # dyyyy fdm 4th order, 2 left nodes
 def dyyyy4_m25(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( f(0,5) - 8.0*f(0,4) + 27.0*f(0,3) - 44.0*f(0,2) + 31.0*f(0,1) - 11.0*f(0,-1) + 4.0*f(0,-2) )/6.0/dx4
 # biharm fdm 4th order, center, copied from cuda code
 def biharm4_m33_m33(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -(f(0,3) + f(0,-3) + f(3,0) + f(-3,0))
@@ -241,7 +248,7 @@ def biharm4_m33_m33(solobj=None, field=None, dx4=None):
 # biharm fdm 4th order, ynode -2 to 5, copied from cuda code
 def biharm4_m33_m25(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(-3,0) - f(-2,-1) - f(-2,1) - f(-1,-2) - f(-1,2) + f(0,5) - f(1,-2) - f(1,2) - f(2,-1) - f(2,1) - f(3,0)
@@ -252,7 +259,7 @@ def biharm4_m33_m25(solobj=None, field=None, dx4=None):
 # biharm fdm 4th order, ynode -5 to 2, copied from cuda code
 def biharm4_m33_m52(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(-3,0) - f(-2,-1) - f(-2,1) - f(-1,-2) - f(-1,2) + f(0,-5) - f(1,-2) - f(1,2) - f(2,-1) - f(2,1) - f(3,0)
@@ -266,7 +273,7 @@ def biharm4_m33_m52(solobj=None, field=None, dx4=None):
 #dx fdm 6th order, center, not copied from cuda code (preprocessor function)
 def dx6_m33(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   fdm = 0
   center = np.array([3,0])
   stencil = np.array([[-1,9,-45,0,45,-9,1]])/60
@@ -279,21 +286,21 @@ def dx6_m33(solobj=None, field=None, dx=None):
 # dy fdm 6th order, 2 left nodes, copied from cuda code
 def dy6_m24(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 2.0*f(0,-2) - 24.0*f(0,-1) - 35.0*f(0,0) + 80.0*f(0,1) - 30.0*f(0,2) + 8.0*f(0,3) - f(0,4) )/60.0/dx
 # dy fdm 6th order, center, copied from cuda code
 def dy6_m33(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(0,-3) + 9.0*f(0,-2) - 45.0*f(0,-1) + 45.0*f(0,1) - 9.0*f(0,2) + f(0,3) )/60.0/dx
 # dxy fdm 6th order, center, copied from cuda code
 def dxy6_m33_m33(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 6.0*(f(-3,-1) - f(-3,1) + f(-1,-3) - f(-1,3) - f(1,-3) + f(1,3) - f(3,-1) + f(3,1))
@@ -303,7 +310,7 @@ def dxy6_m33_m33(solobj=None, field=None, dx2=None):
 # dxy fdm 6th order, center, some uneven contributions in 6thorder=0
 def dxy6_m33_m33_2(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -f(-3,-2) + f(-3,2) - f(-2,-3) + f(-2,3) + f(2,-3) - f(2,3) + f(3,-2) - f(3,2)
@@ -314,7 +321,7 @@ def dxy6_m33_m33_2(solobj=None, field=None, dx2=None):
 # laplace fdm 6th order, center, copied from cuda code
 def laplace6_m33_m33(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 2.0*(f(-3,0) + f(0,-3) + f(0,3) + f(3,0))
@@ -324,28 +331,28 @@ def laplace6_m33_m33(solobj=None, field=None, dx2=None):
 # dxx fdm 6th order, center
 def dxx6_m33(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 2.0*f(-3,0) - 27.0*f(-2,0) + 270.0*f(-1,0) - 490.0*f(0,0) + 270.0*f(1,0) - 27.0*f(2,0) + 2.0*f(3,0) )/180.0/dx2
 # dyy fdm 6th order, 2 left nodes, copied to cuda code
 def dyy6_m25(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( - 11.0*f(0,-2) + 214.0*f(0,-1) - 378.0*f(0,0) + 130.0*f(0,1) + 85.0*f(0,2) - 54.0*f(0,3) + 16.0*f(0,4) - 2.0*f(0,5) )/180.0/dx2
 # dyy fdm 6th order, center, copied from cuda code
 def dyy6_m33(solobj=None, field=None, dx2=None):
   if solobj is not None:
-    field, dx2 = solobj.field, solobj.dx2()
+    field, dx2 = solobj.fields, solobj.dx2()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 2.0*f(0,-3) - 27.0*f(0,-2) + 270.0*f(0,-1) - 490.0*f(0,0) + 270.0*f(0,1) - 27.0*f(0,2) + 2.0*f(0,3) )/180.0/dx2
 #dxxx fdm 6th order, center, not copied from cuda code (preprocessor function)
 def dxxx6_m44(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   fdm = 0
   center = np.array([4,0])
   stencil = np.array([[-7, 72, -338, 488, 0, -488, 338, -72, 7]])/240
@@ -358,28 +365,28 @@ def dxxx6_m44(solobj=None, field=None, dx3=None):
 # dyyy fdm 6th order, 2 left nodes, copied to cuda code
 def dyyy6_m26(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -5.0*f(0,-2) - 424.0*f(0,-1) + 1638.0*f(0,0) - 2504.0*f(0,1) + 2060.0*f(0,2) - 1080.0*f(0,3) + 394.0*f(0,4) - 88.0*f(0,5) + 9.0*f(0,6) )/240.0/dx3
 # dyyy fdm 6th order, 3 left nodes, copied to cuda code
 def dyyy6_m35(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 9.0*f(0,-3) - 86.0*f(0,-2) - 100.0*f(0,-1) + 882.0*f(0,0) - 1370.0*f(0,1) + 926.0*f(0,2) - 324.0*f(0,3) + 70.0*f(0,4) - 7.0*f(0,5) )/240.0/dx3
 # dyyy fdm 6th order, center, copied from cuda code
 def dyyy6_m44(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -7.0*f(0,-4) + 72.0*f(0,-3) - 338.0*f(0,-2) + 488.0*f(0,-1) - 488.0*f(0,1) + 338.0*f(0,2) - 72.0*f(0,3) + 7.0*f(0,4) )/240.0/dx3
 # dxyy fdm 6th order, center, copied from cuda code
 def dxyy6_m33_m33(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 12.0*(-f(-3,-1) - f(-3,1) + f(3,-1) + f(3,1))
@@ -393,7 +400,7 @@ def dxyy6_m33_m33(solobj=None, field=None, dx3=None):
 # dyxx fdm 6th order, center, copied from cuda code
 def dyxx6_m33_m33(solobj=None, field=None, dx3=None):
   if solobj is not None:
-    field, dx3 = solobj.field, solobj.dx3()
+    field, dx3 = solobj.fields, solobj.dx3()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 12.0*(-f(-1,-3) - f(1,-3) + f(-1,3) + f(1,3))
@@ -407,21 +414,21 @@ def dyxx6_m33_m33(solobj=None, field=None, dx3=None):
 # dyyyy fdm 6th order, 2 left nodes, copied to cuda code
 def dyyyy6_m27(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 101.0*f(0,-2) + 58.0*f(0,-1) - 1860.0*f(0,0) + 5272.0*f(0,1) - 7346.0*f(0,2) + 6204.0*f(0,3) - 3428.0*f(0,4) + 1240.0*f(0,5) - 267.0*f(0,6) + 26.0*f(0,7) )/240.0/dx4
 # dyyyy fdm 6th order, 3 left nodes, copied to cuda code
 def dyyyy6_m36(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( -26.0*f(0,-3) + 361.0*f(0,-2) - 1112.0*f(0,-1) + 1260.0*f(0,0) - 188.0*f(0,1) - 794.0*f(0,2) + 744.0*f(0,3) - 308.0*f(0,4) + 70.0*f(0,5) - 7.0*f(0,6) )/240.0/dx4
 # biharm fdm 6th order, center, copied from cuda code
 def biharm6_m44_m44(solobj=None, field=None, dx4=None):
   if solobj is not None:
-    field, dx4 = solobj.field, solobj.dx4()
+    field, dx4 = solobj.fields, solobj.dx4()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 21.0*(f(-4,0) + f(0,-4) + f(0,4) + f(4,0))
@@ -439,7 +446,7 @@ def biharm6_m44_m44(solobj=None, field=None, dx4=None):
 # dy fdm 8th order, center
 def dy8_m44(solobj=None, field=None, dx=None):
   if solobj is not None:
-    field, dx = solobj.field, solobj.dx()
+    field, dx = solobj.fields, solobj.dx()
   def f(ix,iy, field = field):
     return np.roll(field,(-ix,-iy),(0,1))
   return ( 3.0*f(0,-4) - 32.0*f(0,-3) + 168.0*f(0,-2) - 672.0*f(0,-1) + 672.0*f(0,1) - 168.0*f(0,2) + 32.0*f(0,3) - 3.0*f(0,4) )/840.0/dx
