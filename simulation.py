@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path,PurePath
 
 def convert(val):
     constructors = [int, float, str]
@@ -12,8 +13,8 @@ class Simulation:
   def __init__(self, path = None):
     self.params = {}
     if path is not None:
-      self.path = Path(path)
-      readparams(filepath = self.path)
+      self.path = PurePath(path)
+      self.readparams(filepath = self.path)
     else:
       self.Path = None
 
@@ -21,9 +22,12 @@ class Simulation:
     if filepath is None:
       filepath = self.path
     filepath = self.path / file
-    with open(filepath,'r') as f:
+    with open(str(filepath),'r') as f:
       for line in f.readlines():
-        self.params[line.split()[0]] = convert(line.split()[1])
+        try:
+          self.params[line.split()[0]] = convert(line.split()[1])
+        except IndexError:
+          continue
     
 
     
