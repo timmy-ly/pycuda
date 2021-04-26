@@ -29,7 +29,7 @@ class Simulation:
     else:
       self.path = None
   # read simulation parameters as attribute of type dict, default file is 0th frame
-  def readparams(self, filepath=None, file = 'frame_0000.dat'):
+  def readparams(self, filepath=None, file = 'frame_0001.dat'):
     if filepath is None:
       filepath = self.path
     filepath = self.path / file
