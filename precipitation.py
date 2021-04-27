@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path
-from cuda import readbin, dat
+import cuda
+from simulation import Simulation
 from solution import solution
 
 
@@ -36,7 +37,7 @@ class precipiti(solution):
       self.path = Path(path)
       # try:
       self.readparams(self.path)
-      self.fields = readbin(self)
+      self.fields = cuda.readbin(self)
       self.nof = len(self.fields)
       self.set_psi1()
       self.set_psi2()
@@ -60,7 +61,7 @@ class precipiti(solution):
   def readparams(self, filepath=None):
     if filepath is None:
       filepath = self.path
-    filepath = dat(filepath)
+    filepath = cuda.dat(filepath)
     # print(filepath)
     with open(filepath,'r') as f:
       lines = f.readlines()		#list, not array
@@ -113,5 +114,33 @@ class precipiti(solution):
     self.C = self.fields[1]/(self.fields[0] + self.fields[1])
   def set_dfdh(self):
     self.dfdh = self.h**(-3) - self.h**(-6)
-    
+  def set_dyyh(self):
+    self.dyyh = cuda.dyy4_m22(field = self.h, dx2 = self.dx2())
+  def set_dyyyh(self):
+    self.dyyyh = cuda.dyyy4_m33(field=self.h, dx3=self.dx3())
+  def set_pressure(self):
+    if(hasattr(self, "dyyh")):
+      self.pressure = -self.dyyh + self.dfdh
+    else:
+      self.pressure = -cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh
+  def set_osmo(self):
+    self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
+  def evap(self):
+    if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
+      self.evap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
+    else:
+      self.evap = self.ups1*(-cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
   
+  
+class PrecipitiSimu(Simulation):
+  def __init__(self, path):
+    super().__init__(path)
+    self.objectclass = precipiti
+  # expected equilibrium precursor height, depending on Ups, Mu, Chi and initial concentration c
+  # requires 
+  def set_hp(self, c):
+    if(self.sols is not None):
+      sol = self.sols[0]
+      self.hp = (2.0/(1.0 + np.sqrt(1. + 4.*(-sol.ups3 + sol.ups2*(-1 + c*c*sol.chi+np.log(1-c))))))**(1./3.)
+    else:
+      print("Solutions not set!")
