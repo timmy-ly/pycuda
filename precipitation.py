@@ -39,11 +39,13 @@ class precipiti(solution):
       self.readparams(self.path)
       self.fields = cuda.readbin(self)
       self.nof = len(self.fields)
-      self.set_psi1()
-      self.set_psi2()
+      if(self.nof >1):
+        self.set_psi1()
+        self.set_psi2()
+        self.set_C()
       self.set_h()
       self.set_dfdh()
-      self.set_C()
+
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
 
@@ -109,7 +111,10 @@ class precipiti(solution):
   def set_psi2(self):
     self.psi2 = self.fields[1]
   def set_h(self):
-    self.h = self.fields[0] + self.fields[1]
+    if(self.nof >1):
+      self.h = self.fields[0] + self.fields[1]
+    else:
+      self.h = self.fields[0]
   def set_C(self):
     self.C = self.fields[1]/(self.fields[0] + self.fields[1])
   def set_dfdh(self):
