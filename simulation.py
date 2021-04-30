@@ -74,6 +74,8 @@ class Simulation:
     Ny = self.params['Ny']
     Ly = self.params['Ly']
     self.y = np.arange(Ny)*Ly/Ny
+  def set_time(self):
+    self.t = [sol.t for sol in self.sols]
   # set fields you calculate from the original fields according to method of sol 
   # you can use getattr for methods too!
   def set_CalculatedFields(self, MethodNames):
@@ -91,6 +93,8 @@ class Simulation:
       print("solution objects have not been set yet. ")
   # create multiple FieldsMetaAndNorm objects according to ListOfAttributeNames
   # then determine the maximum and minimum values of the fields
+  # technically loops through whole simulation for each AttributeName
+  # naively this should be fastest possible since looping once through simulation but looping through ListOfAttributeNames should be equal
   def set_FieldsMetaAndNorm(self, ListOfAttributeNames):
     self.FieldsMetaAndNorm = [FieldsMetaAndNorm(AttributeName) for AttributeName in ListOfAttributeNames]
     for fieldobj in self.FieldsMetaAndNorm:
