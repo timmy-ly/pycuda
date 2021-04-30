@@ -1,5 +1,5 @@
 import numpy as np
-import solution
+from solution import solution
 from pathlib import Path,PurePath
 
 # default values
