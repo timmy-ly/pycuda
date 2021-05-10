@@ -119,6 +119,8 @@ class precipiti(solution):
     self.C = self.fields[1]/(self.fields[0] + self.fields[1])
   def set_dfdh(self):
     self.dfdh = self.h**(-3) - self.h**(-6)
+  def set_dyh(self):
+    self.dyh = cuda.dy4_m22(field = self.h, dx = self.dx())
   def set_dyyh(self):
     self.dyyh = cuda.dyy4_m22(field = self.h, dx2 = self.dx2())
   def set_dyyyh(self):
