@@ -55,6 +55,12 @@ def get_crosssection_y(solobj, IdxX=None):
     IdxX = solobj.Nx//2
   # get crosssection of solobj.fields
   return solobj.fields[:,IdxX]
+  
+def get_crosssection_1field_y(field, IdxX=None):
+  if(IdxX is None):
+    IdxX = int(len(field)/2)
+  # get crosssection of solobj.fields
+  return field[IdxX]
 
 def mass(solobj, fieldnr):
   return np.sum(solobj.fields[fieldnr])/(solobj.Nx*solobj.Ny)
