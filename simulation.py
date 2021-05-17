@@ -27,13 +27,15 @@ class FieldsMetaAndNorm:
 # simulation class
 class Simulation:
   # constructor
-  def __init__(self, path = None):
+  def __init__(self, path = None, start = None, end = None):
     self.params = {}
     self.filepaths = None
     self.NumberOfFilepaths = None
     self.sols = None
     self.nof = None
     self.objectclass = solution
+    self.start = start
+    self.end = end
     # read simulation parameters if path is present
     if path is not None:
       self.path = Path(PurePath(path))
@@ -59,11 +61,15 @@ class Simulation:
   # get solution objects of all frames
   def set_solutions(self, pattern = pattern):
     self.set_filepaths(pattern = pattern)
-    self.sols = [self.objectclass(self.Filepaths[i]) for i in range(self.NumberOfFilepaths)]
+    self.sols = [self.objectclass(self.Filepaths[i]) for i in range(self.NumberOfFilepaths)[self.start:self.end]]
   # sort solution objects and crop if start/end are provided, default attribute is time
-  def sort_solutions(self, attribute = attribute, start=None, end=None):
+  def sort_solutions(self, attribute = attribute):
     ObjectClass = self.objectclass
-    self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[start:end]
+    self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[self.start:self.end]
+  # wrapper to get sort-indices of field with name attribute for each sol object
+  def ArgSort1DField(self, attribute='h'):
+    for i in np.arange(self.NumberOfFilepaths)[self.start:self.end]:
+      self.sols[i].ArgSort1DField(getattr(self.sols[i], attribute))
   # set number of fields
   def set_nof(self):
     if(self.sols is None):
