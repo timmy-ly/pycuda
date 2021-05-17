@@ -101,6 +101,15 @@ class solution:
     # sum over first and second axis (x and y axis)
     mean = np.sum(self.fields, axis = (1,2))/self.Nx/self.Ny
     return mean
+  # get crosssection in y
+  def get_crosssection_y(self, field, IdxX=None):
+    if(IdxX is None):
+      IdxX = self.Nx//2
+    return field[IdxX]
+  # wrapper for numpy argsort
+  def ArgSort1DField(self, field, IdxX=None):
+    self.Sorted1DIndices = np.argsort(self.get_crosssection_y(field, IdxX))
+
 
 
 
