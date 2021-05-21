@@ -137,6 +137,40 @@ class precipiti(solution):
       self.evap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
     else:
       self.evap = self.ups1*(-cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
+  # overwrite method from ParentClass
+  # fields can only be 2D array or 3d array with axis 0 being fieldnr
+  def ApplyBC(self, fields):
+    # NoAxis = len(np.shape(fields))
+    # DummyFields = fields
+    # if(NoAxis<3):
+    #   DummyFields = np.expand_dims(DummyFields, axis = 0)
+    # need to always pre/append same number of ghost points in order to keep shape of numpy array
+    # since numpy arrays cannot have inhomogeneous lengths within an axis
+    # # BC for fields=self.fields
+    # if(NameOfBC == 'Dipcoating4th'):
+
+    #   if(nof==4):
+    if(self.BC == 'DirichletNeumann'):
+      YM1, YM2 = self.LeftDirichletSlope(fields, self.h0, -self.beta, self.dx())
+      YN1, YN2 = self.RightNeumann(fields)
+      fields = np.insert(fields, 0, YM1, axis = 1)
+      fields = np.insert(fields, 0, YM2, axis = 1)
+      fields = np.append(fields, np.reshape(YN1, (len(YN1),1)), axis = 1)
+      fields = np.append(fields, np.reshape(YN1, (len(YN1),1)), axis = 1)
+      # Top, Bottom, Left, Right "number" of ghost points
+      return fields, None, None, 2, -2
+    else:
+      return super().ApplyBC(fields)
+
+  # field must be 2d array
+  def LeftDirichletSlope(self, field, dirichlet, slope, dx):
+    YM1 = dirichlet
+    YM2 = (12.0*dx*slope - 10.0*dirichlet + 18.0*field[:,0] - 6.0*field[:,1] + field[:,2])/3.0
+    return YM1, YM2
+  def RightNeumann(self, field):
+    YN1 = (173.0*field[:,-1] - 94.0*field[:,-2] + 34.0*field[:,-3] - 8.0*field[:,-4] + field[:,-5])/106.
+    YN2 = (89.0*field[:,-1] + 152.0*field[:,-2] - 117.0*field[:,-3] + 40.0*field[:,-4] - 5.0*field[:,-5])/159.
+    return YN1, YN2
   
   
 class PrecipitiSimu(Simulation):
