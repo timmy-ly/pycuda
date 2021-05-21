@@ -140,13 +140,9 @@ class precipiti(solution):
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
   def ApplyBC(self, fields):
-    # NoAxis = len(np.shape(fields))
-    # DummyFields = fields
-    # if(NoAxis<3):
-    #   DummyFields = np.expand_dims(DummyFields, axis = 0)
     # need to always pre/append same number of ghost points in order to keep shape of numpy array
     # since numpy arrays cannot have inhomogeneous lengths within an axis
-    # # BC for fields=self.fields
+    # # BC for fields=self.fields (the case when fields is not a single 2D field but has shape (nof, Nx, Ny))
     # if(NameOfBC == 'Dipcoating4th'):
 
     #   if(nof==4):
