@@ -1,5 +1,6 @@
 import numpy as np
 
+# class for a solution (for some time t) from cuda data
 class solution:
   def __init__(self):
     #
@@ -13,9 +14,14 @@ class solution:
     self.Lx = None
     self.Ly = None
     self.t = None
+    # string by which BC is chosen
+    self.BC = None
     # model
     self.nof = None
     self.fields = None
+    # dummy field, used when using finite difference methods on fields outside of
+    # class object
+    self.DummyFields = None
       
   @property
   def dtype(self):
@@ -73,6 +79,10 @@ class solution:
     return self.dx()*self.dx()*self.dx()
   def dy(self):
     return self.Ly/self.Ny
+  def dy2(self):
+    return self.dy()*self.dy()
+  def dy3(self):
+    return self.dy()*self.dy()*self.dy()
   
   # 2d arrays of y and x
   def coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):
@@ -109,6 +119,38 @@ class solution:
   # wrapper for numpy argsort
   def ArgSort1DField(self, field, IdxX=None):
     self.Sorted1DIndices = np.argsort(self.get_crosssection_y(field, IdxX))
+  # finite difference methods
+  # for the stencils
+  def f(self,ix,iy):
+    fields = self.DummyFields
+    # GPRight and GPBottom should have negative signs
+    fields, GPTop, GPBottom, GPLeft, GPRight = self.ApplyBC(fields)
+    result = np.roll(fields,(-ix,-iy),(-2,-1))
+    return result[...,GPTop:GPBottom,GPLeft:GPRight]
+  # overwrite this function in ChildClasses
+  def ApplyBC(self, fields):
+    return fields, None, None, None, None
+  # 4th order
+  # dy fdm 4th order, forward, copied from cuda code
+  def dy4_04(self, FieldsOutsideOfInstance=None, dx=None):
+    f = self.f
+    if(FieldsOutsideOfInstance is not None):
+      self.DummyFields = FieldsOutsideOfInstance
+    else:
+      self.DummyFields = self.fields
+    if(dx is None):
+      dx = self.dx()
+    return ( -25.0*f(0,0) + 48.0*f(0,1) - 36.0*f(0,2) + 16.0*f(0,3) - 3.0*f(0,4) )/12.0/dx
+  # dy fdm 4th order, center, copied from cuda code
+  def dy4_m22(self, FieldsOutsideOfInstance=None, dx=None):
+    f = self.f
+    if(FieldsOutsideOfInstance is not None):
+      self.DummyFields = FieldsOutsideOfInstance
+    else:
+      self.DummyFields = self.fields
+    if(dx is None):
+      dx = self.dx()
+    return (-f(0,2) + 8.0*f(0,1) - 8.0*f(0,-1) + f(0,-2) )/12.0/dx
 
 
 
