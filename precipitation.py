@@ -37,6 +37,7 @@ class precipiti(solution):
       self.path = Path(path)
       # try:
       self.readparams(self.path)
+      self.set_coordinates()
       self.fields = cuda.readbin(self)
       self.nof = len(self.fields)
       if(self.nof >1):
@@ -45,6 +46,7 @@ class precipiti(solution):
         self.set_C()
       self.set_h()
       self.set_dfdh()
+
 
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
@@ -120,16 +122,21 @@ class precipiti(solution):
   def set_dfdh(self):
     self.dfdh = self.h**(-3) - self.h**(-6)
   def set_dyh(self):
-    self.dyh = cuda.dy4_m22(field = self.h, dx = self.dx())
+    self.dyh = self.dy4_m22(self.h)
   def set_dyyh(self):
     self.dyyh = self.dyy4_m22(self.h)
   def set_dyyyh(self):
-    self.dyyyh = cuda.dyyy4_m33(field=self.h, dx3=self.dx3())
+    self.dyyyh = self.dyyy4_m33(self.h)
   def set_pressure(self):
     if(hasattr(self, "dyyh")):
       self.pressure = -self.dyyh + self.dfdh
     else:
       self.pressure = -cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh
+  def set_conv1(self):
+    self.set_dyh()
+    self.set_dyyyh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.conv1 = self.psi1*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi1
   def set_osmo(self):
     self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
   def evap(self):

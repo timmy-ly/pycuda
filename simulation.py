@@ -15,15 +15,20 @@ def convert(val):
 
 # class for calculated field of a simulation, usually contains meta data and norms of the field values over a simulation
 class FieldsMetaAndNorm:
-  def __init__(self, AttributeName):
+  def __init__(self, AttributeName, OuterPointsToDropPerSide = 0):
     self.array = None
     self.max = None
     self.min = None
     self.name = AttributeName
+    # drop points if you calculate spatial derivatives since they are
+    # caluculated by np.roll and we usually do not consider boundary conditions
+    self.OuterPointsToDropPerSide = OuterPointsToDropPerSide
   def set_max(self, Iterable):
-    self.max = np.nanmax(Iterable)
+    istart, iend = 0 + self.OuterPointsToDropPerSide, -1 - self.OuterPointsToDropPerSide
+    self.max = np.nanmax(np.array(Iterable)[:,:,istart:iend])
   def set_min(self, Iterable):
-    self.min = np.nanmin(Iterable)
+    istart, iend = 0 + self.OuterPointsToDropPerSide, -1 - self.OuterPointsToDropPerSide
+    self.min = np.nanmin(np.array(Iterable)[:,:,istart:iend])
 # simulation class
 class Simulation:
   # constructor
@@ -104,8 +109,8 @@ class Simulation:
   # then determine the maximum and minimum values of the fields
   # technically loops through whole simulation for each AttributeName
   # naively this should be fastest possible since looping once through simulation but looping through ListOfAttributeNames should be equal
-  def set_FieldsMetaAndNorm(self, ListOfAttributeNames):
-    self.FieldsMetaAndNorm = [FieldsMetaAndNorm(AttributeName) for AttributeName in ListOfAttributeNames]
+  def set_FieldsMetaAndNorm(self, ListOfAttributeNames, OuterPointsToDropPerSide=0):
+    self.FieldsMetaAndNorm = [FieldsMetaAndNorm(AttributeName, OuterPointsToDropPerSide) for AttributeName in ListOfAttributeNames]
     for fieldobj in self.FieldsMetaAndNorm:
       fieldobj.set_max([getattr(sol, fieldobj.name) for sol in self.sols])
       fieldobj.set_min([getattr(sol, fieldobj.name) for sol in self.sols])

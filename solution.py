@@ -85,7 +85,7 @@ class solution:
     return self.dy()*self.dy()*self.dy()
   
   # 2d arrays of y and x
-  def coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):
+  def set_coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):
     if Lx is not None:
       Lx = Lx
     else:
@@ -102,7 +102,7 @@ class solution:
       Ny = Ny
     else:
       Ny = self.Ny
-    return np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
+    self.y, self.x = np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
   # density
   def mean(self):
     # if(self.fields==None):
@@ -161,6 +161,16 @@ class solution:
     if(dx2 is None):
       dx2 = self.dx2()
     return ( -f(0,-2) + 16.0*f(0,-1) - 30.0*f(0,0) + 16.0*f(0,1) -f(0,2) )/12.0/dx2
+  # dyyy fdm 4th order, center, copied from cuda code
+  def dyyy4_m33(self, FieldsOutsideOfInstance=None, dx3=None):
+    f = self.f
+    if(FieldsOutsideOfInstance is not None):
+      self.DummyFields = FieldsOutsideOfInstance
+    else:
+      self.DummyFields = self.fields
+    if(dx3 is None):
+      dx3 = self.dx3()
+    return (-f(0,3) + 8.0*f(0,2) - 13.0*f(0,1) + 13.0*f(0,-1) - 8.0*f(0,-2) + f(0,-3))/8.0/dx3
 
 
 
