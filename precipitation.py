@@ -133,17 +133,46 @@ class precipiti(solution):
     else:
       self.pressure = -cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh
   def set_conv1(self):
-    self.set_dyh()
-    self.set_dyyyh()
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv1 = self.psi1*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi1
+  def set_conv1Comoving(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.conv1Comoving = self.psi1*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
+  def set_conv2(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.conv2 = self.psi2*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi2
+  def set_conv2Comoving(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.conv2Comoving = self.psi2*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
+  def set_diff1(self):
+    dyC1 = self.dy4_m22((1-self.C))
+    self.diff1 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC1
+  def set_diff2(self):
+    dyC2 = self.dy4_m22(self.C)
+    self.diff2 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC2
   def set_osmo(self):
     self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
-  def evap(self):
+  def set_evap(self):
     if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
       self.evap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
     else:
-      self.evap = self.ups1*(-cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
+      self.evap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
   def ApplyBC(self, fields=None):
