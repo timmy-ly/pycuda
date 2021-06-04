@@ -61,11 +61,14 @@ class Simulation:
   # get solution objects of all frames
   def set_solutions(self, pattern = pattern):
     self.set_filepaths(pattern = pattern)
-    self.sols = [self.objectclass(self.Filepaths[i]) for i in range(self.NumberOfFilepaths)[self.start:self.end]]
+    self.sols = [self.objectclass(self.Filepaths[i]) for i in range(self.NumberOfFilepaths)]
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
     ObjectClass = self.objectclass
     self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[self.start:self.end]
+  def set_BCType(self, BCType):
+    for sol in self.sols:
+      sol.BC = BCType
   # wrapper to get sort-indices of field with name attribute for each sol object
   def ArgSort1DField(self, attribute='h'):
     for i in np.arange(self.NumberOfFilepaths)[self.start:self.end]:

@@ -151,6 +151,16 @@ class solution:
     if(dx is None):
       dx = self.dx()
     return (-f(0,2) + 8.0*f(0,1) - 8.0*f(0,-1) + f(0,-2) )/12.0/dx
+  # dyy fdm 4th order, center
+  def dyy4_m22(self, FieldsOutsideOfInstance=None, dx2=None):
+    f = self.f
+    if(FieldsOutsideOfInstance is not None):
+      self.DummyFields = FieldsOutsideOfInstance
+    else:
+      self.DummyFields = self.fields
+    if(dx2 is None):
+      dx2 = self.dx2()
+    return ( -f(0,-2) + 16.0*f(0,-1) - 30.0*f(0,0) + 16.0*f(0,1) -f(0,2) )/12.0/dx2
 
 
 

@@ -122,7 +122,7 @@ class precipiti(solution):
   def set_dyh(self):
     self.dyh = cuda.dy4_m22(field = self.h, dx = self.dx())
   def set_dyyh(self):
-    self.dyyh = cuda.dyy4_m22(field = self.h, dx2 = self.dx2())
+    self.dyyh = self.dyy4_m22(self.h)
   def set_dyyyh(self):
     self.dyyyh = cuda.dyyy4_m33(field=self.h, dx3=self.dx3())
   def set_pressure(self):
@@ -139,7 +139,9 @@ class precipiti(solution):
       self.evap = self.ups1*(-cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
-  def ApplyBC(self, fields):
+  def ApplyBC(self, fields=None):
+    if(fields is None):
+      fields = self.fields
     # need to always pre/append same number of ghost points in order to keep shape of numpy array
     # since numpy arrays cannot have inhomogeneous lengths within an axis
     # # BC for fields=self.fields (the case when fields is not a single 2D field but has shape (nof, Nx, Ny))
@@ -147,7 +149,7 @@ class precipiti(solution):
 
     #   if(nof==4):
     if(self.BC == 'DirichletNeumann'):
-      YM1, YM2 = self.LeftDirichletSlope(fields, self.h0, -self.beta, self.dx())
+      YM1, YM2 = self.LeftDirichletSlope(fields, self.h0, -self.beta, self.dy())
       YN1, YN2 = self.RightNeumann(fields)
       fields = np.insert(fields, 0, YM1, axis = 1)
       fields = np.insert(fields, 0, YM2, axis = 1)
