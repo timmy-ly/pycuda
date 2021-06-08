@@ -132,34 +132,47 @@ class precipiti(solution):
       self.pressure = -self.dyyh + self.dfdh
     else:
       self.pressure = -cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh
+  def set_dydfdh(self):
+    self.dydfdh = self.dy4_m22(self.dfdh)
+  def set_Gy(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    self.Gy = self.g*(self.dyh + self.beta)
+  def set_dyPressure(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.dyPressure = self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)
   def set_conv1(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
-    self.conv1 = self.psi1*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi1
+    self.conv1 = (self.psi1*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi1
   def set_conv1Comoving(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
-    self.conv1Comoving = self.psi1*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
+    self.conv1Comoving = (self.psi1*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
   def set_conv2(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
-    self.conv2 = self.psi2*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi2
+    self.conv2 = (self.psi2*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi2
   def set_conv2Comoving(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
-    self.conv2Comoving = self.psi2*self.h**2/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
+    self.conv2Comoving = (self.psi2*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
   def set_diff1(self):
     dyC1 = self.dy4_m22((1-self.C))
     self.diff1 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC1

@@ -3,7 +3,6 @@ from solution import solution
 from pathlib import Path,PurePath
 
 # default values
-pattern = 'frame_[0-9]*bin'
 attribute = 't'
 def convert(val):
     constructors = [int, float, str]
@@ -33,6 +32,7 @@ class FieldsMetaAndNorm:
 class Simulation:
   # constructor
   def __init__(self, path = None, start = None, end = None):
+    self.pattern = 'frame_[0-9]*bin'
     self.params = {}
     self.filepaths = None
     self.NumberOfFilepaths = None
@@ -60,11 +60,15 @@ class Simulation:
         except IndexError:
           continue
   # set paths of all simulation frames
-  def set_filepaths(self, pattern = pattern):
+  def set_filepaths(self, pattern = None):
+    if(pattern is None):
+      pattern = self.pattern
     self.Filepaths = list(self.path.glob(pattern))
     self.NumberOfFilepaths = len(self.Filepaths)
   # get solution objects of all frames
-  def set_solutions(self, pattern = pattern):
+  def set_solutions(self, pattern = None):
+    if(pattern is None):
+      pattern = self.pattern
     self.set_filepaths(pattern = pattern)
     self.sols = [self.objectclass(self.Filepaths[i]) for i in range(self.NumberOfFilepaths)]
   # sort solution objects and crop if start/end are provided, default attribute is time
