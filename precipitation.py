@@ -188,6 +188,12 @@ class precipiti(solution):
       self.evap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
     else:
       self.evap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
+  def set_MaskedEvap(self):
+    if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
+      self.MaskedEvap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
+    else:
+      self.MaskedEvap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
+    self.MaskedEvap = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)*self.MaskedEvap
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
   def ApplyBC(self, fields=None):
