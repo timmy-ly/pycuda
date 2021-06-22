@@ -121,6 +121,8 @@ class precipiti(solution):
       self.h = self.fields[0]
   def set_C(self):
     self.C = self.fields[1]/(self.fields[0] + self.fields[1])
+  def set_DeltaC(self):
+    self.DeltaC = self.fields[1]/(self.fields[0] + self.fields[1]) - self.Ceq
   def set_phi(self):
     self.phi = self.fields[2]
   def set_zeta(self):
