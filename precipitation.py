@@ -107,7 +107,7 @@ class precipiti(solution):
       elif lines[i].split()[0] == 'alpha':
         self.alpha = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'c0':
-        self.c0 = float(lines[i].split()[1])
+        self.C0 = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'Ceq':
         self.Ceq = float(lines[i].split()[1])
   def set_psi1(self):
@@ -121,8 +121,8 @@ class precipiti(solution):
       self.h = self.fields[0]
   def set_C(self):
     self.C = self.fields[1]/(self.fields[0] + self.fields[1])
-  def set_DeltaC(self):
-    self.DeltaC = self.fields[1]/(self.fields[0] + self.fields[1]) - self.Ceq
+  def set_DeltaC0(self):
+    self.DeltaC0 = self.fields[1]/(self.fields[0] + self.fields[1]) - self.C0
   def set_phi(self):
     self.phi = self.fields[2]
   def set_zeta(self):
