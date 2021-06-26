@@ -80,6 +80,8 @@ class precipiti(solution):
         self.Ly = float(lines[i].split()[1])
       elif lines[i].split()[0] == 't':
         self.t = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'imagenumber':
+        self.imagenumber = int(lines[i].split()[1])
       elif lines[i].split()[0] == 'h0':
         self.h0 = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'v':
@@ -191,9 +193,9 @@ class precipiti(solution):
     self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
   def set_evap(self):
     if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
-      self.evap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
+      self.evap = -self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
     else:
-      self.evap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
+      self.evap = -self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
   def set_MaskedEvap(self):
     if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
       self.MaskedEvap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
