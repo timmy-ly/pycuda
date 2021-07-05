@@ -103,6 +103,8 @@ class solution:
     else:
       Ny = self.Ny
     self.y, self.x = np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
+  def set_SpatialGrid1Dy(self):
+    self.y = np.arange(self.Ny)*self.Ly/self.Ny
   # density
   def mean(self):
     # if(self.fields==None):
@@ -111,7 +113,10 @@ class solution:
     # sum over first and second axis (x and y axis)
     mean = np.sum(self.fields, axis = (1,2))/self.Nx/self.Ny
     return mean
-  # get crosssection in y
+  # crosssection method for attribute in y
+  def transform_crosssection(self, field):
+    return getattr(self, field)[self.Nx//2]
+  # general crosssection method in y
   def get_crosssection_y(self, field, IdxX=None):
     if(IdxX is None):
       IdxX = self.Nx//2
