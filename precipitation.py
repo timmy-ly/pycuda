@@ -155,6 +155,13 @@ class precipiti(solution):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.dyPressure = self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)
+  def set_conv(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.conv = (self.h**3)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.h   
   def set_conv1(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -192,10 +199,15 @@ class precipiti(solution):
   def set_osmo(self):
     self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
   def set_evap(self):
-    if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
-      self.evap = -self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
+    if(self.nof>1):
+      if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
+        self.evap = -self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
+      else:
+        self.evap = -self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
     else:
-      self.evap = -self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
+      if not hasattr(self, "dyyh"):
+        self.set_dyyh()
+      self.evap = -self.ups1*(-self.dyyh + self.dfdh  - self.ups3)
   def set_MaskedEvap(self):
     if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
       self.MaskedEvap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
