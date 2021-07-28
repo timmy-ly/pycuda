@@ -65,7 +65,7 @@ class precipiti(solution):
   def readparams(self, filepath=None):
     if filepath is None:
       filepath = self.path
-    filepath = cuda.dat(filepath)
+    filepath = str(cuda.dat(filepath))
     # print(filepath)
     with open(filepath,'r') as f:
       lines = f.readlines()		#list, not array
