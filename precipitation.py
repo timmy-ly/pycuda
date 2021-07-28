@@ -106,6 +106,8 @@ class precipiti(solution):
         self.LAMB = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'sigma':
         self.sigma = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'PeXM':
+        self.PeXM = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'alpha':
         self.alpha = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'c0':
