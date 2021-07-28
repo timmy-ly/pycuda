@@ -80,6 +80,8 @@ class precipiti(solution):
         self.Ly = float(lines[i].split()[1])
       elif lines[i].split()[0] == 't':
         self.t = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'dt':
+        self.dt = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'imagenumber':
         self.imagenumber = int(lines[i].split()[1])
       elif lines[i].split()[0] == 'h0':
