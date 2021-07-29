@@ -4,35 +4,36 @@ import cuda
 from simulation import Simulation
 from solution import solution
 
+def DefaultParams(object):
+  print("Applying DefaultParams")
+  object.nof = 4
+  # model
+  object.v = 0.2
+  object.ups0 = 0.0
+  object.chi = 1.5
+  object.ups1 = 0.0
+  object.ups2 = 1.0
+  object.ups3 = -5.0
+  object.g = 10**-3
+  object.beta = 2.0
+  object.lamb = 1.8
+  object.LAMB = 1.4
+  object.sigma = 1.8
+  object.alpha = 0.0
+  # BC
+  object.bc = 1
+  # BC/IC
+  object.h0 = 20.0
+  object.c0 = 0.3
+  object.phi0 = 1.0
+  # IC
+  object.noise = 0.0
+  object.h1 = 0.0
 
 # methods and attributes that apply to all precipiti problems
 class precipiti(solution):
-  def __init__(self, path = None, nof = 4):
+  def __init__(self, path = None):
     super().__init__()
-    self.nof = nof
-    # model
-    self.v = 0.2
-    self.ups0 = 0.0
-    self.chi = 1.5
-    self.ups1 = 0.0
-    self.ups2 = 1.0
-    self.ups3 = -5.0
-    self.g = 10**-3
-    self.beta = 2.0
-    self.lamb = 1.8
-    self.LAMB = 1.4
-    self.sigma = 1.8
-    self.alpha = 0.0
-    # BC
-    self.bc = 1
-    # BC/IC
-    self.h0 = 20.0
-    self.c0 = 0.3
-    self.phi0 = 1.0
-    # IC
-    self.noise = 0.0
-    self.h1 = 0.0
-
     if path is not None:
       self.path = Path(path)
       # try:
@@ -46,21 +47,10 @@ class precipiti(solution):
         self.set_C()
       self.set_h()
       self.set_dfdh()
-
-
+    else:
+      DefaultParams(self)
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
-
-
-
-
-  @property
-  def v(self):
-    return self._v
-
-  @v.setter
-  def v(self, value):
-    self._v = value  
 
   def readparams(self, filepath=None):
     if filepath is None:
@@ -108,8 +98,6 @@ class precipiti(solution):
         self.LAMB = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'sigma':
         self.sigma = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'PeXM':
-        self.PeXM = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'alpha':
         self.alpha = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'c0':
@@ -264,3 +252,82 @@ class PrecipitiSimu(Simulation):
       self.hp = (2.0/(1.0 + np.sqrt(1. + 4.*(-sol.ups3 + sol.ups2*(-1 + c*c*sol.chi+np.log(1-c))))))**(1./3.)
     else:
       print("Solutions not set!")
+
+class XuMeakin(solution):
+  def __init__(self, path = None):
+    super().__init__()
+    if path is not None:
+      self.path = Path(path)
+      # try:
+      self.readparams(self.path)
+      self.set_coordinates()
+      self.fields = cuda.readbin(self)
+      self.nof = len(self.fields)
+      if(self.nof >1):
+        self.set_C()
+        self.set_phi()
+    else:
+      DefaultParams(self)
+      # except FileNotFoundError:
+        # print("no corresponding .dat and/or .bin file")
+
+  def readparams(self, filepath=None):
+    if filepath is None:
+      filepath = self.path
+    filepath = str(cuda.dat(filepath))
+    # print(filepath)
+    with open(filepath,'r') as f:
+      lines = f.readlines()		#list, not array
+    for i in np.arange(len(lines)):
+      if lines[i].split()[0] == 'Nx':
+        self.Nx = int(lines[i].split()[1])
+      elif lines[i].split()[0] == 'Ny':
+        self.Ny = int(lines[i].split()[1])
+      elif lines[i].split()[0] == 'Lx':
+        self.Lx = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'Ly':
+        self.Ly = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 't':
+        self.t = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'dt':
+        self.dt = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'imagenumber':
+        self.imagenumber = int(lines[i].split()[1])
+      elif lines[i].split()[0] == 'lamb':
+        self.lamb = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'PeXM':
+        self.PeXM = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'alpha':
+        self.alpha = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'c0':
+        self.C0 = float(lines[i].split()[1])
+      elif lines[i].split()[0] == 'Ceq':
+        self.Ceq = float(lines[i].split()[1])
+
+  def set_C(self):
+    self.C = self.fields[0]
+  def set_phi(self):
+    self.phi = self.fields[1]
+  def set_dxphi(self):
+    self.dxphi = cuda.dx4_m22(self.phi, self.dx())
+  def set_dyphi(self):
+    self.dyphi = cuda.dy4_m22(self.phi, self.dx())
+  def set_dxxphi(self):
+    self.dxxphi = cuda.dxx4_m22(self.phi, self.dx2())
+  def set_dxyphi(self):
+    self.dxyphi = cuda.dxy4_m22_m22(self.phi, self.dx2())
+  def set_dyyphi(self):
+    self.dyyphi = cuda.dyy4_m22(self.phi, self.dx2())
+  def set_lapcurv(self):
+    if not (hasattr(self, "dxphi") and hasattr(self, "dyphi") and hasattr(self, "dxxphi") and hasattr(self, "dxyphi") and hasattr(self, "dyyphi")):
+      self.set_dxphi()
+      self.set_dyphi()
+      self.set_dxxphi()
+      self.set_dxyphi()
+      self.set_dyyphi()
+    dxphi, dyphi, dxxphi, dxyphi, dyyphi = self.dxphi, self.dyphi, self.dxxphi, self.dxyphi, self.dyyphi
+    expression1 = np.divide(dyyphi*dyphi**2,dyphi**2 + dxphi**2, out=np.zeros_like(self.phi), where=( dyphi!=0 ))
+    expression2 = np.divide(dxxphi*dxphi**2,dxphi**2 + dyphi**2, out=np.zeros_like(self.phi), where=( dxphi!=0 ))
+    expression3 = 2.0*np.divide(dxyphi*dxphi*dyphi,dxphi**2 + dyphi**2, out=np.zeros_like(self.phi), where=((dxphi!=0) | (dyphi!=0)))
+    self.lapcurv = expression1 + expression2 + expression3
+    # self.lapcurv = dyyphi/(1.0 + dxphi/dyphi*dxphi/dyphi) + dxxphi/(1.0 + dyphi/dxphi*dyphi/dxphi) + 2.0*dxyphi/(dxphi/dyphi + dyphi/dxphi)
