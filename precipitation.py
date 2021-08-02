@@ -331,3 +331,8 @@ class XuMeakin(solution):
     expression3 = 2.0*np.divide(dxyphi*dxphi*dyphi,dxphi**2 + dyphi**2, out=np.zeros_like(self.phi), where=((dxphi!=0) | (dyphi!=0)))
     self.lapcurv = expression1 + expression2 + expression3
     # self.lapcurv = dyyphi/(1.0 + dxphi/dyphi*dxphi/dyphi) + dxxphi/(1.0 + dyphi/dxphi*dyphi/dxphi) + 2.0*dxyphi/(dxphi/dyphi + dyphi/dxphi)
+
+class XuMeakinSimu(Simulation):
+  def __init__(self, path, start = None, end = None):
+    super().__init__(path, start = None, end = None)
+    self.objectclass = XuMeakin
