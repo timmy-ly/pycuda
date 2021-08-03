@@ -76,11 +76,16 @@ class Simulation:
     ObjectClass = self.objectclass
     self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[self.start:self.end]
   def ExtractSolsSubset(self, ListOfIndices):
-    self.solsSubset = [self.sols[i] for i in ListOfIndices]
+    SolsSubset = []
+    for i in ListOfIndices:
+      if(i<len(self.sols)):
+        SolsSubset.append(self.sols[i])
+      else:
+        break
+    return SolsSubset
   # ExtractSolsSubset and adjust Filepaths, numberoffilepaths attributes
   def FilterSolsFromSubset(self, ListOfIndices):
-    self.ExtractSolsSubset(ListOfIndices)
-    self.sols = self.solsSubset
+    self.sols = self.ExtractSolsSubset(ListOfIndices)
     self.Filepaths = [sol.path for sol in self.sols]
     self.NumberOfFilepaths = len(self.Filepaths)
   def set_BCType(self, BCType):
