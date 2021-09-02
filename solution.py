@@ -77,12 +77,16 @@ class solution:
     return self.dx()*self.dx()
   def dx3(self):
     return self.dx()*self.dx()*self.dx()
+  def dx4(self):
+    return self.dx()*self.dx()*self.dx()*self.dx()
   def dy(self):
     return self.Ly/self.Ny
   def dy2(self):
     return self.dy()*self.dy()
   def dy3(self):
     return self.dy()*self.dy()*self.dy()
+  def dy4(self):
+    return self.dy()*self.dy()*self.dy()*self.dy()
   
   # 2d arrays of y and x
   def set_coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):

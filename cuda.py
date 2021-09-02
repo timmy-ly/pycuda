@@ -219,6 +219,10 @@ def dyxx4_m22_m22(fields, dx3):
 def dyyyy4_m25(fields, dx4):
   f = fTemplate(fields)
   return ( f(0,5) - 8.0*f(0,4) + 27.0*f(0,3) - 44.0*f(0,2) + 31.0*f(0,1) - 11.0*f(0,-1) + 4.0*f(0,-2) )/6.0/dx4
+# dyyyy fdm 4th order, center
+def dyyyy4_m33(fields, dx4):
+  f = fTemplate(fields)
+  return ( -f(0,3) + 12.0*f(0,2) - 39.0*f(0,1) + 56.0*f(0,0) - 39.0*f(0,-1) + 12.0*f(0,-2) - f(0,-3) )/6.0/dx4
 # biharm fdm 4th order, center, copied from cuda code
 def biharm4_m33_m33(fields, dx4):
   f = fTemplate(fields)

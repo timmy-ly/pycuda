@@ -123,12 +123,30 @@ class precipiti(solution):
     self.zeta = self.fields[3]
   def set_dfdh(self):
     self.dfdh = self.h**(-3) - self.h**(-6)
+  def set_dypsi1(self):
+    self.dypsi1 = self.dy4_m22(self.psi1)
+  def set_dypsi2(self):
+    self.dypsi2 = self.dy4_m22(self.psi2)
   def set_dyh(self):
     self.dyh = self.dy4_m22(self.h)
   def set_dyyh(self):
     self.dyyh = self.dyy4_m22(self.h)
   def set_dyyyh(self):
     self.dyyyh = self.dyyy4_m33(self.h)
+  def set_dyyyyh(self):
+    self.dyyyyh = cuda.dyyyy4_m33(self.h,self.dx4())
+  def set_M1(self):
+    self.M1 = 1.0/3.0*self.psi1*self.h*self.h
+  def set_M2(self):
+    self.M2 = 1.0/3.0*self.psi2*self.h*self.h
+  def set_dyM1(self):
+    if(not hasattr(self,"dypsi1")):
+      self.set_dypsi1()
+    self.dyM1 = 1.0/3.0*self.h*(self.h*self.dypsi1 + 2.0*self.psi1*self.dyh)
+  def set_dyM2(self):
+    if(not hasattr(self,"dypsi2")):
+      self.set_dypsi2()
+    self.dyM2 = 1.0/3.0*self.h*(self.h*self.dypsi2 + 2.0*self.psi2*self.dyh)
   def set_pressure(self):
     if(hasattr(self, "dyyh")):
       self.pressure = -self.dyyh + self.dfdh
@@ -140,6 +158,10 @@ class precipiti(solution):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
     self.Gy = self.g*(self.dyh + self.beta)
+  def set_dyGy(self):
+    if(not hasattr(self,"dyyh")):
+      self.set_dyyh()
+    self.dyGy = self.g*self.dyyh
   def set_dyPressure(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -168,6 +190,20 @@ class precipiti(solution):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv1Comoving = (self.psi1*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
+  def set_conv1rate(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    if(not hasattr(self,"dyyyyh")):
+      self.set_dyyyyh()
+    dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
+    dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
+    self.set_M1()
+    self.set_dyM1()
+    self.set_Gy()
+    self.set_dyGy()
+    self.conv1rate = self.dyM1*(self.dyyyh - dydfdh) + self.M1*(self.dyyyyh - dyydfdh) - self.dyM1*self.Gy - self.M1*self.dyGy + self.v*self.dypsi1
   def set_conv2(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -182,12 +218,39 @@ class precipiti(solution):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv2Comoving = (self.psi2*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
+  def set_conv2rate(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    if(not hasattr(self,"dyyyyh")):
+      self.set_dyyyyh()
+    dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
+    dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
+    self.set_M2()
+    self.set_dyM2()
+    self.set_Gy()
+    self.set_dyGy()
+    self.conv2rate = self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy + self.v*self.dypsi2
+    # print(np.max(np.abs(self.conv2rate)))
   def set_diff1(self):
     dyC1 = self.dy4_m22((1-self.C))
     self.diff1 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC1
+  def set_diff1rate(self):
+    mdiff = -self.ups0*self.h*(1-2*self.chi*(1-self.C*self.C))
+    dymdiff = cuda.dy4_m22(mdiff, self.dx())
+    dyC1 = cuda.dy4_m22((1-self.C),self.dx())
+    dyyC1 = cuda.dyy4_m22((1-self.C),self.dx2())
+    self.diff1rate = dymdiff*dyC1 + mdiff*dyyC1
   def set_diff2(self):
     dyC2 = self.dy4_m22(self.C)
     self.diff2 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC2
+  def set_diff2rate(self):
+    mdiff = -self.ups0*self.h*(1-2*self.chi*(1-self.C*self.C))
+    dymdiff = cuda.dy4_m22(mdiff, self.dx())
+    dyC2 = cuda.dy4_m22(self.C,self.dx())
+    dyyC2 = cuda.dyy4_m22(self.C,self.dx2())
+    self.diff2rate = dymdiff*dyC2 + mdiff*dyyC2
   def set_osmo(self):
     self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
   def set_evap(self):
