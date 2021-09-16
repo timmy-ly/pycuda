@@ -131,6 +131,9 @@ class Simulation:
     for fieldobj in self.FieldsMetaAndNorm:
       fieldobj.set_max([getattr(sol, fieldobj.name) for sol in self.sols])
       fieldobj.set_min([getattr(sol, fieldobj.name) for sol in self.sols])
+
+  def get_field(self,fieldname):
+    return [getattr(sol, fieldname) for sol in self.sols]
   
 
   
