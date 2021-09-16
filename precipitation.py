@@ -269,6 +269,14 @@ class precipiti(solution):
     else:
       self.MaskedEvap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
     self.MaskedEvap = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)*self.MaskedEvap
+  def set_mean_h(self):
+    self.mean_h = self.mean(self.h)
+  def mean(self, field):
+    shape = np.shape(field)
+    if(len(shape)==1):
+      return np.sum(field)/shape[0]
+    elif(len(shape)==2):
+      return np.sum(field)/shape[0]/shape[1]
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
   def ApplyBC(self, fields=None):
