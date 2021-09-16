@@ -106,7 +106,7 @@ class Simulation:
     Ly = self.params['Ly']
     self.y = np.arange(Ny)*Ly/Ny
   def set_time(self):
-    self.t = [sol.t for sol in self.sols]
+    self.t = np.array([sol.t for sol in self.sols])
   # set fields you calculate from the original fields according to method of sol 
   # you can use getattr for methods too!
   def set_CalculatedFields(self, MethodNames):
@@ -133,7 +133,7 @@ class Simulation:
       fieldobj.set_min([getattr(sol, fieldobj.name) for sol in self.sols])
 
   def get_field(self,fieldname):
-    return [getattr(sol, fieldname) for sol in self.sols]
+    return np.array([getattr(sol, fieldname) for sol in self.sols])
   
 
   
