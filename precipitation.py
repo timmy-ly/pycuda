@@ -135,10 +135,16 @@ class precipiti(solution):
     self.dyyyh = self.dyyy4_m33(self.h)
   def set_dyyyyh(self):
     self.dyyyyh = cuda.dyyyy4_m33(self.h,self.dx4())
+  def set_M(self):
+    self.M = 1.0/3.0*self.h*self.h*self.h
   def set_M1(self):
     self.M1 = 1.0/3.0*self.psi1*self.h*self.h
   def set_M2(self):
     self.M2 = 1.0/3.0*self.psi2*self.h*self.h
+  def set_dyM(self):
+    if(not hasattr(self,"h")):
+      self.set_dyh()
+    self.dyM = 3.0*self.h*self.h*self.dyh
   def set_dyM1(self):
     if(not hasattr(self,"dypsi1")):
       self.set_dypsi1()
@@ -176,6 +182,20 @@ class precipiti(solution):
       self.set_dyyyh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv = (self.h**3)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.h   
+  def set_convrate(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    if(not hasattr(self,"dyyyyh")):
+      self.set_dyyyyh()
+    dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
+    dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
+    self.set_M()
+    self.set_dyM()
+    self.set_Gy()
+    self.set_dyGy()
+    self.convrate = self.dyM*(self.dyyyh - dydfdh) + self.M*(self.dyyyyh - dyydfdh) - self.dyM*self.Gy - self.M*self.dyGy + self.v*self.dyh
   def set_conv1(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
