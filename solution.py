@@ -106,7 +106,8 @@ class solution:
       Ny = Ny
     else:
       Ny = self.Ny
-    self.y, self.x = np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
+    self.y2D, self.x2D = np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
+    # careful since this overwrites self.y from set_coordinates
   def set_SpatialGrid1Dy(self):
     self.y = np.arange(self.Ny)*self.Ly/self.Ny
   # density
