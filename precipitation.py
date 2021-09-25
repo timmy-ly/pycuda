@@ -115,6 +115,10 @@ class precipiti(solution):
       self.h = self.fields[0]
   def set_C(self):
     self.C = self.fields[1]/(self.fields[0] + self.fields[1])
+  def set_dyC1(self):
+    self.dyC1 = cuda.dy4_m22((1-self.C),self.dx())
+  def set_dyC2(self):
+    self.dyC2 = cuda.dy4_m22(self.C,self.dx())
   def set_DeltaC0(self):
     self.DeltaC0 = self.fields[1]/(self.fields[0] + self.fields[1]) - self.C0
   def set_phi(self):
@@ -254,7 +258,7 @@ class precipiti(solution):
     self.conv2rate = self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy + self.v*self.dypsi2
     # print(np.max(np.abs(self.conv2rate)))
   def set_diff1(self):
-    dyC1 = self.dy4_m22((1-self.C))
+    dyC1 = cuda.dy4_m22((1-self.C),self.dx())
     self.diff1 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC1
   def set_diff1rate(self):
     mdiff = -self.ups0*self.h*(1-2*self.chi*(1-self.C*self.C))
@@ -263,7 +267,7 @@ class precipiti(solution):
     dyyC1 = cuda.dyy4_m22((1-self.C),self.dx2())
     self.diff1rate = dymdiff*dyC1 + mdiff*dyyC1
   def set_diff2(self):
-    dyC2 = self.dy4_m22(self.C)
+    dyC2 = cuda.dy4_m22(self.C,self.dx())
     self.diff2 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC2
   def set_diff2rate(self):
     mdiff = -self.ups0*self.h*(1-2*self.chi*(1-self.C*self.C))
@@ -289,6 +293,17 @@ class precipiti(solution):
     else:
       self.MaskedEvap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
     self.MaskedEvap = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)*self.MaskedEvap
+  # left or right half of the domain
+  def WhichHalf(self, direction='right'):
+    startidx = self.Ny//2
+    endidx = None
+    if(not hasattr(self, "y")):
+      self.set_SpatialGrid1Dy()
+    if(direction == 'left'):
+      startidx = 0
+      endidx = self.Ny//2
+    return startidx, endidx
+  #### 0 dimensional attributes
   def set_mean_h(self):
     self.mean_h = self.mean(self.h)
   def mean(self, field):
@@ -297,6 +312,22 @@ class precipiti(solution):
       return np.sum(field)/shape[0]
     elif(len(shape)==2):
       return np.sum(field)/shape[0]/shape[1]
+  # inflection point in 1D
+  def set_yInflection(self, direction='right'):
+    startidx, endidx = self.WhichHalf(direction)
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    dyh1D = self.transform_crosssection('dyh')
+    yidx = np.argmax(np.abs(dyh1D[startidx:endidx]))
+    self.yInflection = self.y[startidx:endidx][yidx]
+  # todo: method for contact line position
+  
+  # position of local concentration maximum
+  def set_yCMax(self, direction='right'):
+    startidx, endidx = self.WhichHalf(direction)
+    c1D = self.transform_crosssection('C')
+    yidx = np.argmax(c1D[startidx:endidx])
+    self.yCMax = self.y[startidx:endidx][yidx]
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
   def ApplyBC(self, fields=None):
