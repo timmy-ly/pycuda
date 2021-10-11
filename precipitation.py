@@ -45,6 +45,9 @@ class precipiti(solution):
         self.set_psi1()
         self.set_psi2()
         self.set_C()
+      if(self.nof >2):
+        self.set_phi()
+        self.set_zeta()
       self.set_h()
       self.set_dfdh()
     else:
