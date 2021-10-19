@@ -137,7 +137,7 @@ class precipiti(solution):
   def set_dyh(self):
     self.dyh = self.dy4_m22(self.h)
   def set_dyyh(self):
-    self.dyyh = self.dyy4_m22(self.h)
+    self.dyyh = cuda.dyy4_m22(self.h,self.dx2())
   def set_dyyyh(self):
     self.dyyyh = self.dyyy4_m33(self.h)
   def set_dyyyyh(self):
