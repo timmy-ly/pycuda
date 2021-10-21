@@ -107,6 +107,7 @@ class precipiti(solution):
         self.C0 = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'Ceq':
         self.Ceq = float(lines[i].split()[1])
+  ##### attributes with same shape as self.fields[i]
   def set_psi1(self):
     self.psi1 = self.fields[0]
   def set_psi2(self):
@@ -300,6 +301,15 @@ class precipiti(solution):
     else:
       self.MaskedEvap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
     self.MaskedEvap = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)*self.MaskedEvap
+  ##### 0 dimensional attributes
+  def set_mean_h(self):
+    self.mean_h = self.mean(self.h)
+  def mean(self, field):
+    shape = np.shape(field)
+    if(len(shape)==1):
+      return np.sum(field)/shape[0]
+    elif(len(shape)==2):
+      return np.sum(field)/shape[0]/shape[1]
   # left or right half of the domain
   def WhichHalf(self, direction='right'):
     startidx = self.Ny//2
@@ -310,15 +320,6 @@ class precipiti(solution):
       startidx = 0
       endidx = self.Ny//2
     return startidx, endidx
-  #### 0 dimensional attributes
-  def set_mean_h(self):
-    self.mean_h = self.mean(self.h)
-  def mean(self, field):
-    shape = np.shape(field)
-    if(len(shape)==1):
-      return np.sum(field)/shape[0]
-    elif(len(shape)==2):
-      return np.sum(field)/shape[0]/shape[1]
   # inflection point in 1D
   def set_yInflection(self, direction='right'):
     startidx, endidx = self.WhichHalf(direction)
