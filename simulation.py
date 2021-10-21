@@ -105,6 +105,12 @@ class Simulation:
     Ny = self.params['Ny']
     Ly = self.params['Ly']
     self.y = np.arange(Ny)*Ly/Ny
+  def set_SpatialGrid2D(self):
+    Nx = self.params['Nx']
+    Lx = self.params['Lx']
+    Ny = self.params['Ny']
+    Ly = self.params['Ly']
+    self.y2D, self.x2D = np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
   def set_time(self):
     self.t = np.array([sol.t for sol in self.sols])
   # set fields you calculate from the original fields according to method of sol 
@@ -134,6 +140,11 @@ class Simulation:
 
   def get_field(self,fieldname):
     return np.array([getattr(sol, fieldname) for sol in self.sols])
+
+  # wrapper to apply method to all solutions, functionhandle has to be string
+  def ApplyToAll(self,FunctionHandle,*args):
+    for sol in self.sols:
+      getattr(sol, FunctionHandle)(*args)
   
 
   
