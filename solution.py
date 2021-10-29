@@ -129,6 +129,13 @@ class solution:
   # wrapper for numpy argsort
   def ArgSort1DField(self, field, IdxX=None):
     self.Sorted1DIndices = np.argsort(self.get_crosssection_y(field, IdxX))
+  # check if the provided field has negative values
+  # def CheckIfNegative(self, field):
+    # return np.any(np.array(field)<0)
+  def CheckIfBelowThreshold(self, field, Threshold):
+    # requires field to be "rectangular" shape, otherwise np.array does not work
+    # and therefore comparison operation wouldnt work either
+    return np.any(np.array(field)<Threshold)
   # finite difference methods
   # for the stencils
   def f(self,ix,iy):
