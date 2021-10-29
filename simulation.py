@@ -48,17 +48,21 @@ class Simulation:
     else:
       self.path = None
   # read simulation parameters as attribute of type dict, default file is 0th frame
-  def readparams(self, filepath=None, file = 'frame_0001.dat'):
+  def readparams(self, filepath=None, file = 'frame_0000.dat'):
     if filepath is None:
       filepath = self.path
     filepath = self.path / file
-    with open(str(filepath),'r') as f:
-      for line in f.readlines():
-        # handle IndexError that occurs when a line only has one column
-        try:
-          self.params[line.split()[0]] = convert(line.split()[1])
-        except IndexError:
-          continue
+    try:
+      with open(str(filepath),'r') as f:
+        for line in f.readlines():
+          # handle IndexError that occurs when a line only has one column
+          try:
+            self.params[line.split()[0]] = convert(line.split()[1])
+          except IndexError:
+            continue
+    except FileNotFoundError:
+      print(self.path, filepath)
+      raise FileNotFoundError
   # set paths of all simulation frames
   def set_filepaths(self, pattern = None):
     if(pattern is None):
