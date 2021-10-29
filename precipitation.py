@@ -143,6 +143,8 @@ class precipiti(solution):
     self.dyyyh = self.dyyy4_m33(self.h)
   def set_dyyyyh(self):
     self.dyyyyh = cuda.dyyyy4_m33(self.h,self.dx4())
+  def set_dyyphi(self):
+    self.dyyphi = cuda.dyy4_m22(self.phi, self.dx2())
   def set_M(self):
     self.M = 1.0/3.0*self.h*self.h*self.h
   def set_M1(self):
@@ -301,6 +303,16 @@ class precipiti(solution):
     else:
       self.MaskedEvap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
     self.MaskedEvap = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)*self.MaskedEvap
+  def set_dfXMdphi(self):
+    self.dfXMdphi = -(1.0 - self.phi*self.phi)*(self.phi - self.lamb*(self.C-self.Ceq))
+  # set time derivative of phi but without advection
+  def set_DtPhiNoAdvec(self):
+    if not hasattr(self, "dyyphi"):
+      self.set_dyyphi()
+    if not hasattr(self, "dfXMdphi"):
+      self.set_dfXMdphi()
+    self.DtPhiNoAdvec = self.sigma*(self.dyyphi/(self.LAMB*self.LAMB) - self.dfXMdphi)
+
   ##### 0 dimensional attributes
   def mean(self, field):
     shape = np.shape(field)
@@ -384,6 +396,12 @@ class PrecipitiSimu(Simulation):
       self.hp = (2.0/(1.0 + np.sqrt(1. + 4.*(-sol.ups3 + sol.ups2*(-1 + c*c*sol.chi+np.log(1-c))))))**(1./3.)
     else:
       print("Solutions not set!")
+  def get_OnsetOfPrecipitation(self, Threshold = 0.95):
+    # self.set_CalculatedFields('set_DtPhiNoAdvec')
+    for i,sol in enumerate(self.sols):
+      if(sol.CheckIfBelowThreshold(sol.phi, Threshold)):
+        break
+    self.OnsetOfPrecipitationIndex = i
 
 class XuMeakin(solution):
   def __init__(self, path = None):
