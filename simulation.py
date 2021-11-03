@@ -31,10 +31,11 @@ class FieldsMetaAndNorm:
 # simulation class
 class Simulation:
   # constructor
-  def __init__(self, path = None, start = None, end = None):
+  def __init__(self, path = None, start = None, end = None, file = 'frame_0000.dat'):
     self.pattern = 'frame_[0-9]*bin'
     self.params = {}
     self.filepaths = None
+    self.file = file
     self.NumberOfFilepaths = None
     self.sols = None
     self.nof = None
@@ -48,9 +49,11 @@ class Simulation:
     else:
       self.path = None
   # read simulation parameters as attribute of type dict, default file is 0th frame
-  def readparams(self, filepath=None, file = 'frame_0000.dat'):
+  def readparams(self, filepath=None, file = None):
     if filepath is None:
       filepath = self.path
+    if file is None:
+      file = self.file
     filepath = self.path / file
     try:
       with open(str(filepath),'r') as f:
