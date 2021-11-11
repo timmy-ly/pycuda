@@ -1,5 +1,11 @@
 import numpy as np
 
+class field:
+  def __init__(self, values):
+    self.array = values
+  def set_max(self):
+    self.max = np.nanmax(self.array)
+
 # class for a solution (for some time t) from cuda data
 class solution:
   def __init__(self):
