@@ -77,6 +77,12 @@ class solution:
   def nof(self, value):
     self._nof = value
   
+  def CheckSetAttr(self, *args):
+    # AttributeList is a list of strings or a string
+    for arg in args:
+      if not hasattr(self, arg):
+        getattr(self, "set_" + arg)()
+
   def dx(self):
     return self.Lx/self.Nx
   def dx2(self):
