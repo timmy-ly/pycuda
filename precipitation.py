@@ -170,6 +170,8 @@ class precipiti(solution):
       self.pressure = -cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh
   def set_dydfdh(self):
     self.dydfdh = self.dy4_m22(self.dfdh)
+  def set_mask(self):
+    self.mask = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)
   def set_Gy(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -233,7 +235,21 @@ class precipiti(solution):
     self.set_dyM1()
     self.set_Gy()
     self.set_dyGy()
-    self.conv1rate = self.dyM1*(self.dyyyh - dydfdh) + self.M1*(self.dyyyyh - dyydfdh) - self.dyM1*self.Gy - self.M1*self.dyGy + self.v*self.dypsi1
+    self.conv1rate = -( self.dyM1*(self.dyyyh - dydfdh) + self.M1*(self.dyyyyh - dyydfdh) - self.dyM1*self.Gy - self.M1*self.dyGy + self.v*self.dypsi1 )
+  def set_conv1rateComoving(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    if(not hasattr(self,"dyyyyh")):
+      self.set_dyyyyh()
+    dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
+    dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
+    self.set_M1()
+    self.set_dyM1()
+    self.set_Gy()
+    self.set_dyGy()
+    self.conv1rateComoving = -( self.dyM1*(self.dyyyh - dydfdh) + self.M1*(self.dyyyyh - dyydfdh) - self.dyM1*self.Gy - self.M1*self.dyGy )
   def set_conv2(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -261,8 +277,21 @@ class precipiti(solution):
     self.set_dyM2()
     self.set_Gy()
     self.set_dyGy()
-    self.conv2rate = self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy + self.v*self.dypsi2
-    # print(np.max(np.abs(self.conv2rate)))
+    self.conv2rate = -( self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy + self.v*self.dypsi2 )
+  def set_conv2rateComoving(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    if(not hasattr(self,"dyyyyh")):
+      self.set_dyyyyh()
+    dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
+    dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
+    self.set_M2()
+    self.set_dyM2()
+    self.set_Gy()
+    self.set_dyGy()
+    self.conv2rateComoving = -( self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy )
   def set_diff1(self):
     dyC1 = cuda.dy4_m22((1-self.C),self.dx())
     self.diff1 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC1
@@ -271,7 +300,11 @@ class precipiti(solution):
     dymdiff = cuda.dy4_m22(mdiff, self.dx())
     dyC1 = cuda.dy4_m22((1-self.C),self.dx())
     dyyC1 = cuda.dyy4_m22((1-self.C),self.dx2())
-    self.diff1rate = dymdiff*dyC1 + mdiff*dyyC1
+    self.diff1rate = -( dymdiff*dyC1 + mdiff*dyyC1 )
+  def set_diff1rateMasked(self):
+    self.set_diff1rate()
+    self.set_mask()
+    self.diff1rateMasked = self.mask*self.diff1rate
   def set_diff2(self):
     dyC2 = cuda.dy4_m22(self.C,self.dx())
     self.diff2 = -self.ups0*self.h*(1-2*self.chi*(1-self.C)*self.C)*dyC2
@@ -280,7 +313,11 @@ class precipiti(solution):
     dymdiff = cuda.dy4_m22(mdiff, self.dx())
     dyC2 = cuda.dy4_m22(self.C,self.dx())
     dyyC2 = cuda.dyy4_m22(self.C,self.dx2())
-    self.diff2rate = dymdiff*dyC2 + mdiff*dyyC2
+    self.diff2rate = -( dymdiff*dyC2 + mdiff*dyyC2 )
+  def set_diff2rateMasked(self):
+    self.set_diff2rate()
+    self.set_mask()
+    self.diff2rateMasked = self.mask*self.diff2rate
   def set_osmo(self):
     if(self.ups2==0):
       self.osmo = 0
@@ -298,20 +335,23 @@ class precipiti(solution):
         self.set_dyyh()
       self.evap = -self.ups1*(-self.dyyh + self.dfdh  - self.ups3)
   def set_MaskedEvap(self):
-    if(hasattr(self, "osmo") and hasattr(self, "dyyh")):
-      self.MaskedEvap = self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
-    else:
-      self.MaskedEvap = self.ups1*(-self.dyy4_m22(self.h) + self.dfdh  + self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C) - self.ups3)
-    self.MaskedEvap = 0.5*(np.tanh(35.0*(self.h-1.1))+1.0)*self.MaskedEvap
+    self.CheckSetAttr("evap", "mask")
+    self.MaskedEvap = self.mask*self.evap
   def set_dfXMdphi(self):
     self.dfXMdphi = -(1.0 - self.phi*self.phi)*(self.phi - self.lamb*(self.C-self.Ceq))
+  # this needs to be added for 2D!
+  def set_MeanCurv(self):
+    self.MeanCurv = 0.0
   # set time derivative of phi but without advection
   def set_DtPhiNoAdvec(self):
-    if not hasattr(self, "dyyphi"):
-      self.set_dyyphi()
-    if not hasattr(self, "dfXMdphi"):
-      self.set_dfXMdphi()
-    self.DtPhiNoAdvec = self.sigma*(self.dyyphi/(self.LAMB*self.LAMB) - self.dfXMdphi)
+    self.CheckSetAttr("dyyphi", "dfXMdphi", "MeanCurv")
+    self.DtPhiNoAdvec = self.sigma*(self.dyyphi/(self.LAMB*self.LAMB) - self.dfXMdphi - self.MeanCurv/(self.LAMB*self.LAMB))
+  def set_dtpsi1(self):
+    self.CheckSetAttr("conv1rateComoving", "diff1rateMasked", "MaskedEvap")
+    self.dtpsi1 = self.conv1rateComoving + self.diff1rateMasked + self.MaskedEvap
+  def set_dtpsi2(self):
+    self.CheckSetAttr("conv2rateComoving", "diff2rateMasked", "DtPhiNoAdvec")
+    self.dtpsi2 = self.conv2rateComoving + self.diff2rateMasked + self.alpha*self.h*self.DtPhiNoAdvec 
 
   ##### 0 dimensional attributes
   def mean(self, field):
