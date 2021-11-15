@@ -302,8 +302,7 @@ class precipiti(solution):
     dyyC1 = cuda.dyy4_m22((1-self.C),self.dx2())
     self.diff1rate = -( dymdiff*dyC1 + mdiff*dyyC1 )
   def set_diff1rateMasked(self):
-    self.set_diff1rate()
-    self.set_mask()
+    self.CheckSetAttr("diff1rate", "mask")
     self.diff1rateMasked = self.mask*self.diff1rate
   def set_diff2(self):
     dyC2 = cuda.dy4_m22(self.C,self.dx())
