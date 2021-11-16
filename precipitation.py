@@ -39,6 +39,7 @@ class precipiti(solution):
       # try:
       self.readparams(self.path)
       self.set_coordinates()
+      self.set_SpatialGrid1Dy()
       self.fields = cuda.readbin(self)
       self.nof = len(self.fields)
       if(self.nof >1):
