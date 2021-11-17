@@ -51,6 +51,7 @@ class precipiti(solution):
         self.set_zeta()
       self.set_h()
       self.set_dfdh()
+      self.set_disjp()
     else:
       DefaultParams(self)
       # except FileNotFoundError:
