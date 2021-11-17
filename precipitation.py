@@ -132,6 +132,8 @@ class precipiti(solution):
     self.zeta = self.fields[3]
   def set_dfdh(self):
     self.dfdh = self.h**(-3) - self.h**(-6)
+  def set_disjp(self):
+    self.disjp = -self.h**(-3) + self.h**(-6)
   def set_dypsi1(self):
     self.dypsi1 = self.dy4_m22(self.psi1)
   def set_dypsi2(self):
