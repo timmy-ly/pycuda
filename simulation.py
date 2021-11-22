@@ -152,6 +152,8 @@ class Simulation:
   def ApplyToAll(self,FunctionHandle,*args):
     for sol in self.sols:
       getattr(sol, FunctionHandle)(*args)
+  def GetMax(self, Attribute):
+    return np.nanmax([getattr(sol, Attribute) for sol in self.sols])
   
 
   
