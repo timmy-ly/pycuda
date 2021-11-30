@@ -31,21 +31,25 @@ class FieldsMetaAndNorm:
 # simulation class
 class Simulation:
   # constructor
-  def __init__(self, path = None, start = None, end = None, file = 'frame_0000.dat'):
+  def __init__(self, path = None, start = None, end = None, file = 'frame_0000.dat', 
+               objectclass = solution, attribute = attribute):
     self.pattern = 'frame_[0-9]*bin'
     self.params = {}
     self.filepaths = None
     self.file = file
+    self.attribute = attribute
     self.NumberOfFilepaths = None
     self.sols = None
     self.nof = None
-    self.objectclass = solution
+    self.objectclass = objectclass
     self.start = start
     self.end = end
     # read simulation parameters if path is present
     if path is not None:
       self.path = Path(PurePath(path))
       self.readparams(filepath = self.path)
+      self.set_solutions(pattern = self.pattern)
+      self.sort_solutions(attribute = self.attribute)
     else:
       self.path = None
   # read simulation parameters as attribute of type dict, default file is 0th frame

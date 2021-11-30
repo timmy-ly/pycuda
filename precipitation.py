@@ -428,9 +428,9 @@ class precipiti(solution):
   
   
 class PrecipitiSimu(Simulation):
-  def __init__(self, path, start = None, end = None, file = 'frame_0000.dat'):
-    super().__init__(path, start = start, end = end, file = file)
-    self.objectclass = precipiti
+  def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', objectclass = precipiti):
+    super().__init__(path, start = start, end = end, file = file, objectclass = objectclass)
+    # self.objectclass = objectclass
   # expected equilibrium precursor height, depending on Ups, Mu, Chi and initial concentration c
   # requires 
   def set_hp(self, c):
