@@ -163,45 +163,66 @@ class solution:
     return np.any(np.array(field)<Threshold)
 
   # get indices where >y
-  def DomainRightPartIndices1D(self, y):
-    return self.y>y
+  def DomainRightPartIndices1D(self, ymin):
+    return self.y>ymin
   # get values where >y
-  def DomainRightPart1D(self, data, y):
-    MaskedIndices = self.DomainRightPartIndices1D(y)
+  def DomainRightPart1D(self, data, ymin):
+    MaskedIndices = self.DomainRightPartIndices1D(ymin)
     return data[MaskedIndices], MaskedIndices
 
   # finds peaks with similar height to the highest peak for y>ymin (default: half of domain)
+  # Arrays are masked once to cut down the domain
+  # then values are filtered out that have not high enough prominence (index values do not change
+  # only number of indices change!)
   def FindHighestPeaksMasked1D(self, Field, FractionOfMaximumProminence = None, ymin = None):
     # does nothing if Field is already 1D
     data = self.get_crosssection_y(Field)
     if(ymin == None):
       ymin = self.Ly/2
     # mask domain according to ymin
-    MaskedData, _ = self.DomainRightPart1D(data, ymin)
+    MaskedData, MaskedDomainIndices = self.DomainRightPart1D(data, ymin)
     # find highest peaks
-    PeakIndices = self.FindHighestPeaks1D(MaskedData, FractionOfMaximumProminence)
+    PeakIndices, properties = self.FindHighestPeaks1D(MaskedData, FractionOfMaximumProminence)
+    # prominence may not be intuitive for people who think of peaks as superpositions of
+    # peaks. For a found peak: the nearest minima on the left and right are the bases. 
+    # however for the calculation of the prominence the higher one of the two is chosen. 
+    # get MaximumProminence, corresponding to the most significant peak
+    # using FractionOfMaximum... makes most sense with prominence rather than keyword height
+    # since one period may contain two peaks of very similar height. 
+    # since the smaller peak will have a much smaller prominence due to it neighboring the other
+    # peak, the smaller peak can be excluded by filtering out small prominences
+    ProminenceMask = self.MaskFromMaximumValue(properties, 'prominences', FractionOfMaximumProminence)
+    self.ExcludePeaksFromProperties(properties, PeakIndices, ProminenceMask)
+    PeakIndices = PeakIndices[ProminenceMask]
     # shift indices back in order to match the shape of data
-    PeakIndices = PeakIndices + len(data) - len(MaskedData)
-    return PeakIndices
+    # PeakIndices = PeakIndices + len(data) - len(MaskedData)
+    return PeakIndices, properties, MaskedDomainIndices
+
   # finds peaks with similar height to the highest peak for y>ymin (default: half of domain)
   def FindHighestPeaks1D(self, Field, FractionOfMaximumProminence = None):
     if(FractionOfMaximumProminence == None):
       FractionOfMaximumProminence = 0.9
     # does nothing if Field is already 1D
     data = self.get_crosssection_y(Field)
-    PeakIndices, properties = find_peaks(data, prominence = 0)
-    # prominence may not be intuitive for people who think of peaks as superpositions of
-    # peaks. For a found peak: the nearest minima on the left and right are the bases. 
-    # however for the calculation of the prominence the higher one of the two is chosen. 
-    Prominences = properties['prominences']
-    # get MaximumProminence, corresponding to the most significant peak
-    # using FractionOfMaximum... makes most sense with prominence rather than keyword height
-    # since one period may contain two peaks of very similar height. 
-    # since the smaller peak will have a much smaller prominence due to it neighboring the other
-    # peak, the smaller peak can be excluded by filtering out small prominences
-    MaximumProminence = np.max(Prominences)
-    PeakIndices = PeakIndices[Prominences>MaximumProminence*FractionOfMaximumProminence]
-    return PeakIndices
+    # left/right_bases seem to be useless since they are only relevant for prominence
+    # in general they may not be the local minima except for when wlen is specified well
+    PeakIndices, properties = find_peaks(data, height = 0, prominence = 0)
+    return PeakIndices, properties
+
+  # create mask that only takes the values of key that are above maximum*fraction
+  def MaskFromMaximumValue(self, properties, key, fraction):
+    maximum = np.max(properties[key])
+    return properties[key]>(maximum*fraction)
+  # take each property and mask each array
+  def ExcludePeaksFromProperties(self, properties, ReferenceArray, mask):
+    # only modify those values that have same shape as ReferenceArray
+    n = len(ReferenceArray)
+    for key, value in properties.items():
+      if(len(value) == n):
+        # call dictionary directly in order to change its values
+        properties[key] = value[mask]
+      else:
+        continue
 
 
   # finite difference methods
