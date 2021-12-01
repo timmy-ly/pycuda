@@ -1,11 +1,13 @@
 import numpy as np
 from scipy.signal import find_peaks
 
-class field:
-  def __init__(self, values):
-    self.array = values
-  def set_max(self):
-    self.max = np.nanmax(self.array)
+class SolutionMeasures:
+  def __init__(self):
+    self.PeakIndex = None
+    self.Height = None
+    self.Prominence = None
+    self.Base = None
+
 
 # class for a solution (for some time t) from cuda data
 class solution:
@@ -162,18 +164,10 @@ class solution:
     # and therefore comparison operation wouldnt work either
     return np.any(np.array(field)<Threshold)
 
-  # get indices where >y
-  def DomainRightPartIndices1D(self, ymin):
-    return self.y>ymin
-  # get values where >y
-  def DomainRightPart1D(self, data, ymin):
-    MaskedIndices = self.DomainRightPartIndices1D(ymin)
-    return data[MaskedIndices], MaskedIndices
-
   # finds peaks with similar height to the highest peak for y>ymin (default: half of domain)
   # Arrays are masked once to cut down the domain
-  # then values are filtered out that have not high enough prominence (index values do not change
-  # only number of indices change!)
+  # then indices/peaks that do not correspond to high enough prominence are filtered out 
+  # Note that index values do not change only array sizes change
   def FindHighestPeaksMasked1D(self, Field, FractionOfMaximumProminence = None, ymin = None):
     # does nothing if Field is already 1D
     data = self.get_crosssection_y(Field)
@@ -209,6 +203,13 @@ class solution:
     PeakIndices, properties = find_peaks(data, height = 0, prominence = 0)
     return PeakIndices, properties
 
+  # get indices where >ymin
+  def DomainRightPartIndices1D(self, ymin):
+    return self.y>ymin
+  # get values where >ymin
+  def DomainRightPart1D(self, data, ymin):
+    MaskedIndices = self.DomainRightPartIndices1D(ymin)
+    return data[MaskedIndices], MaskedIndices
   # create mask that only takes the values of key that are above maximum*fraction
   def MaskFromMaximumValue(self, properties, key, fraction):
     maximum = np.max(properties[key])
@@ -224,8 +225,7 @@ class solution:
       else:
         continue
 
-
-  # finite difference methods
+    # finite difference methods
   # for the stencils
   def f(self,ix,iy):
     fields = self.DummyFields
