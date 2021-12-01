@@ -2,7 +2,15 @@ import numpy as np
 from pathlib import Path
 import cuda
 from simulation import Simulation
-from solution import solution
+from solution import SolutionMeasures, solution
+
+class PrecipitiMeasures(SolutionMeasures):
+  def __init__(self):
+    super().__init__()
+    self.PeakIndex = None
+    self.Height = None
+    self.Prominence = None
+    self.Base = None
 
 def DefaultParams(object):
   print("Applying DefaultParams")
@@ -52,6 +60,7 @@ class precipiti(solution):
       self.set_h()
       self.set_dfdh()
       self.set_disjp()
+      self.Measures = PrecipitiMeasures()
     else:
       DefaultParams(self)
       # except FileNotFoundError:
@@ -357,6 +366,14 @@ class precipiti(solution):
     self.dtpsi2 = self.conv2rateComoving + self.diff2rateMasked + self.alpha*self.h*self.DtPhiNoAdvec 
 
   ##### 0 dimensional attributes
+  # need to provide data from FindHighestPeaksMasked1D
+  # take data of rightmost peak as Measures
+  def SetPeriodicSolutionMeasures(self, PeakIndices, properties):
+    self.Measures.PeakIndex = PeakIndices[-1]
+    self.Measures.Height = properties['peak_heights'][-1]
+    self.Measures.Prominence = properties['prominences'][-1]
+    self.Measures.Base = properties['left_bases'][-1]
+
   def mean(self, field):
     shape = np.shape(field)
     if(len(shape)==1):
