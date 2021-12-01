@@ -130,14 +130,26 @@ class solution:
     # sum over first and second axis (x and y axis)
     mean = np.sum(self.fields, axis = (1,2))/self.Nx/self.Ny
     return mean
-  # crosssection method for attribute in y
+  # legacy function, just a wrapper now
   def transform_crosssection(self, field):
-    return getattr(self, field)[self.Nx//2]
+    return self.get_crosssection_y(field)
   # general crosssection method in y
   def get_crosssection_y(self, field, IdxX=None):
-    if(IdxX is None):
-      IdxX = self.Nx//2
-    return field[IdxX]
+    # in case field is the name of an existing class object attribute
+    if(isinstance(field, str)):
+      field = getattr(self, field)
+    # in case field is not numpy array
+    field = np.array(field)
+    # in case field is already one dimensional
+    if field.ndim == 1:
+      return field
+    # 2D case
+    else:
+      # if no crosssection index is provided
+      if(IdxX is None):
+        # take index in the center of the first axis
+        IdxX = np.shape(field)[0]//2
+      return field[IdxX]
   # wrapper for numpy argsort
   def ArgSort1DField(self, field, IdxX=None):
     self.Sorted1DIndices = np.argsort(self.get_crosssection_y(field, IdxX))
