@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import find_peaks
 
 class field:
   def __init__(self, values):
@@ -160,6 +161,48 @@ class solution:
     # requires field to be "rectangular" shape, otherwise np.array does not work
     # and therefore comparison operation wouldnt work either
     return np.any(np.array(field)<Threshold)
+
+  # get indices where >y
+  def DomainRightPartIndices1D(self, y):
+    return self.y>y
+  # get values where >y
+  def DomainRightPart1D(self, data, y):
+    MaskedIndices = self.DomainRightPartIndices1D(y)
+    Maskedy = self.y[MaskedIndices]
+    return data[MaskedIndices], Maskedy, MaskedIndices
+
+  # finds peaks with similar height to the highest peak for y>yMeasure (default: half of domain)
+  def FindHighestPeaksMasked1D(self, Field, FractionOfMaximumProminence = None, yMeasure = None):
+    # does nothing if Field is already 1D
+    data = self.get_crosssection_y(Field)
+    if(yMeasure == None):
+      yMeasure = self.Ly/2
+    # mask domain according to ymeasure
+    MaskedData, Maskedy, MaskedIndices = self.DomainRightPart1D(data, yMeasure)
+    # find highest peaks
+    PeakIndices = self.FindHighestPeaks1D(MaskedData, FractionOfMaximumProminence)
+    return PeakIndices, MaskedData, Maskedy, MaskedIndices
+  # finds peaks with similar height to the highest peak for y>yMeasure (default: half of domain)
+  def FindHighestPeaks1D(self, Field, FractionOfMaximumProminence = None):
+    if(FractionOfMaximumProminence == None):
+      FractionOfMaximumProminence = 0.9
+    # does nothing if Field is already 1D
+    data = self.get_crosssection_y(Field)
+    PeakIndices, properties = find_peaks(data, prominence = 0)
+    # prominence may not be intuitive for people who think of peaks as superpositions of
+    # peaks. For a found peak: the nearest minima on the left and right are the bases. 
+    # however for the calculation of the prominence the higher one of the two is chosen. 
+    Prominences = properties['prominences']
+    # get MaximumProminence, corresponding to the most significant peak
+    # using FractionOfMaximum... makes most sense with prominence rather than keyword height
+    # since one period may contain two peaks of very similar height. 
+    # since the smaller peak will have a much smaller prominence due to it neighboring the other
+    # peak, the smaller peak can be excluded by filtering out small prominences
+    MaximumProminence = np.max(Prominences)
+    PeakIndices = PeakIndices[Prominences>MaximumProminence*FractionOfMaximumProminence]
+    return PeakIndices
+
+
   # finite difference methods
   # for the stencils
   def f(self,ix,iy):
