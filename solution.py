@@ -168,21 +168,22 @@ class solution:
   # get values where >y
   def DomainRightPart1D(self, data, y):
     MaskedIndices = self.DomainRightPartIndices1D(y)
-    Maskedy = self.y[MaskedIndices]
-    return data[MaskedIndices], Maskedy, MaskedIndices
+    return data[MaskedIndices], MaskedIndices
 
-  # finds peaks with similar height to the highest peak for y>yMeasure (default: half of domain)
-  def FindHighestPeaksMasked1D(self, Field, FractionOfMaximumProminence = None, yMeasure = None):
+  # finds peaks with similar height to the highest peak for y>ymin (default: half of domain)
+  def FindHighestPeaksMasked1D(self, Field, FractionOfMaximumProminence = None, ymin = None):
     # does nothing if Field is already 1D
     data = self.get_crosssection_y(Field)
-    if(yMeasure == None):
-      yMeasure = self.Ly/2
-    # mask domain according to ymeasure
-    MaskedData, Maskedy, MaskedIndices = self.DomainRightPart1D(data, yMeasure)
+    if(ymin == None):
+      ymin = self.Ly/2
+    # mask domain according to ymin
+    MaskedData, _ = self.DomainRightPart1D(data, ymin)
     # find highest peaks
     PeakIndices = self.FindHighestPeaks1D(MaskedData, FractionOfMaximumProminence)
-    return PeakIndices, MaskedData, Maskedy, MaskedIndices
-  # finds peaks with similar height to the highest peak for y>yMeasure (default: half of domain)
+    # shift indices back in order to match the shape of data
+    PeakIndices = PeakIndices + len(data) - len(MaskedData)
+    return PeakIndices
+  # finds peaks with similar height to the highest peak for y>ymin (default: half of domain)
   def FindHighestPeaks1D(self, Field, FractionOfMaximumProminence = None):
     if(FractionOfMaximumProminence == None):
       FractionOfMaximumProminence = 0.9
