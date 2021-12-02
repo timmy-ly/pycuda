@@ -7,6 +7,11 @@ class SolutionMeasures:
     self.Height = None
     self.Prominence = None
     self.Base = None
+class Field:
+  def __init__(self, data = None, FieldName = None):
+    self.name = FieldName
+    self.data = data
+    self.dim = len(np.shape(data))
 
 
 # class for a solution (for some time t) from cuda data
@@ -168,15 +173,15 @@ class solution:
   # Arrays are masked once to cut down the domain
   # then indices/peaks that do not correspond to high enough prominence are filtered out 
   # Note that index values do not change only array sizes change
-  def FindHighestPeaksMasked1D(self, Field, FractionOfMaximumProminence = None, ymin = None):
+  def FindHighestPeaksRight1D(self, data, FractionOfMaximumProminence = None, ymin = None):
     # does nothing if Field is already 1D
-    data = self.get_crosssection_y(Field)
+    data1D = self.get_crosssection_y(data)
     if(ymin == None):
       ymin = self.Ly/2
     # mask domain according to ymin
-    MaskedData, MaskedDomainIndices = self.DomainRightPart1D(data, ymin)
+    MaskedData = self.SplitDataRight1D(data1D, ymin)
     # find highest peaks
-    PeakIndices, properties = self.FindHighestPeaks1D(MaskedData, FractionOfMaximumProminence)
+    PeakIndices, properties = self.FindPeaks1D(MaskedData)
     # prominence may not be intuitive for people who think of peaks as superpositions of
     # peaks. For a found peak: the nearest minima on the left and right are the bases. 
     # however for the calculation of the prominence the higher one of the two is chosen. 
@@ -190,31 +195,38 @@ class solution:
     PeakIndices = PeakIndices[ProminenceMask]
     # shift indices back in order to match the shape of data
     # PeakIndices = PeakIndices + len(data) - len(MaskedData)
-    return PeakIndices, properties, MaskedDomainIndices
+    return PeakIndices, properties
 
-  # finds peaks with similar height to the highest peak for y>ymin (default: half of domain)
-  def FindHighestPeaks1D(self, Field, FractionOfMaximumProminence = None):
-    if(FractionOfMaximumProminence == None):
-      FractionOfMaximumProminence = 0.9
-    # does nothing if Field is already 1D
-    data = self.get_crosssection_y(Field)
+  # wrapper for scipy's find_peaks
+  def FindPeaks1D(self, data):
+    # does nothing if data is already 1D
+    data1D = self.get_crosssection_y(data)
     # left/right_bases seem to be useless since they are only relevant for prominence
     # in general they may not be the local minima except for when wlen is specified well
-    PeakIndices, properties = find_peaks(data, height = 0, prominence = 0)
+    PeakIndices, properties = find_peaks(data1D, height = 0, prominence = 0)
     return PeakIndices, properties
 
   # get indices where >ymin
-  def DomainRightPartIndices1D(self, ymin):
-    return self.y>ymin
+  def SplitDomainRightIndices1D(self, ymin= None):
+    if(ymin == None):
+      ymin = self.Ly/2
+    self.SplitDomainIndices = self.y>ymin
+    self.Maskedy = self.y[self.SplitDomainIndices]
   # get values where >ymin
-  def DomainRightPart1D(self, data, ymin):
-    MaskedIndices = self.DomainRightPartIndices1D(ymin)
-    return data[MaskedIndices], MaskedIndices
+  def SplitDataRight1D(self, data, ymin=None):
+    if(ymin == None):
+      ymin = self.Ly/2
+    self.SplitDomainRightIndices1D(ymin)
+    return data[self.SplitDomainIndices]
   # create mask that only takes the values of key that are above maximum*fraction
   def MaskFromMaximumValue(self, properties, key, fraction):
     maximum = np.max(properties[key])
     return properties[key]>(maximum*fraction)
   # take each property and mask each array
+  # for my purpose it would have been better if scipy.find_peaks returned an array
+  # of peak objects so that each property value is tied to each peak
+  # the values are only indirectly tied to each peak by their indices in the property
+  # arrays right now. It is probabaly done like this with lots of peaks in mind
   def ExcludePeaksFromProperties(self, properties, ReferenceArray, mask):
     # only modify those values that have same shape as ReferenceArray
     n = len(ReferenceArray)
