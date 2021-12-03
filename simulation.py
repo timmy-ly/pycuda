@@ -5,12 +5,16 @@ from pathlib import Path,PurePath
 # default values
 attribute = 't'
 def convert(val):
-    constructors = [int, float, str]
-    for c in constructors:
-        try:
-            return c(val)
-        except ValueError:
-            pass
+  constructors = [int, float, str]
+  for c in constructors:
+    try:
+      return c(val)
+    except ValueError:
+      pass
+
+class SimulMeasure:
+  def __init__(self):
+    self.t = None
 
 # class for calculated field of a simulation, usually contains meta data and norms of the field values over a simulation
 class FieldsMetaAndNorm:
@@ -28,6 +32,7 @@ class FieldsMetaAndNorm:
   def set_min(self, Iterable):
     istart, iend = 0 + self.OuterPointsToDropPerSide, -1 - self.OuterPointsToDropPerSide
     self.min = np.nanmin(np.array(Iterable)[:,:,istart:iend])
+    
 # simulation class
 class Simulation:
   # constructor
@@ -162,9 +167,6 @@ class Simulation:
   
 
   
-    
-
-
 
   
     
