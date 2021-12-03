@@ -1,15 +1,18 @@
 import numpy as np
 from scipy.signal import find_peaks
 
+class ErrorNoExtrema(Exception):
+  pass
+
 class SolutionMeasures:
   def __init__(self):
     self.PeakIndex = None
     self.Height = None
     self.Prominence = None
     self.Base = None
-class Field:
+class FieldProps:
   def __init__(self, data = None, FieldName = None):
-    self.name = FieldName
+    self.FieldName = FieldName
     self.data = data
     self.dim = len(np.shape(data))
 
@@ -173,7 +176,7 @@ class solution:
   # Arrays are masked once to cut down the domain
   # then indices/peaks that do not correspond to high enough prominence are filtered out 
   # Note that index values do not change only array sizes change
-  def FindHighestPeaksRight1D(self, data, FractionOfMaximumProminence = None, ymin = None):
+  def FindHighestPeaksRight1D(self, data, FractionOfMaximumProminence = None, ymin = None, **kwargs):
     # does nothing if Field is already 1D
     data1D = self.get_crosssection_y(data)
     if(ymin == None):
@@ -181,7 +184,7 @@ class solution:
     # mask domain according to ymin
     MaskedData = self.SplitDataRight1D(data1D, ymin)
     # find highest peaks
-    PeakIndices, properties = self.FindPeaks1D(MaskedData)
+    PeakIndices, properties = self.FindPeaks1D(MaskedData, **kwargs)
     # prominence may not be intuitive for people who think of peaks as superpositions of
     # peaks. For a found peak: the nearest minima on the left and right are the bases. 
     # however for the calculation of the prominence the higher one of the two is chosen. 
@@ -192,24 +195,47 @@ class solution:
     # peak, the smaller peak can be excluded by filtering out small prominences
     ProminenceMask = self.MaskFromMaximumValue(properties, 'prominences', FractionOfMaximumProminence)
     self.ExcludePeaksFromProperties(properties, PeakIndices, ProminenceMask)
+    # PeakIndices are relative to the shape of data1D
     PeakIndices = PeakIndices[ProminenceMask]
+    # add peak positions
+    properties["positions"] = self.Maskedy[PeakIndices]
     # shift indices back in order to match the shape of data
     # PeakIndices = PeakIndices + len(data) - len(MaskedData)
     return PeakIndices, properties
 
+  # wrapper of FindHighestPeaksRight1D but reversed for minima
+  def FindSmallestMinimaRight1D(self, data, FractionOfMaximumProminence = None, ymin = None):
+    MinimaIndices, properties = self.FindHighestPeaksRight1D(-data, FractionOfMaximumProminence, height = (None, 0))
+    return MinimaIndices, properties
+
   # wrapper for scipy's find_peaks
-  def FindPeaks1D(self, data):
+  def FindPeaks1D(self, data, height = 0, prominence = 0):
     # does nothing if data is already 1D
     data1D = self.get_crosssection_y(data)
+    # provide prominence and height keywords in order to save their values in properties
     # left/right_bases seem to be useless since they are only relevant for prominence
-    # in general they may not be the local minima except for when wlen is specified well
-    PeakIndices, properties = find_peaks(data1D, height = 0, prominence = 0)
+    # in general they correspond to non-local minima except for when wlen is specified well
+    # PeakIndices are relative to the shape of data1D
+    # see FindMinima1D for minima algorithm
+    PeakIndices, properties = find_peaks(data1D, height = height, prominence = prominence)
+    if(len(PeakIndices)== 0):
+      raise ErrorNoExtrema('Could not find extrema')
     return PeakIndices, properties
+  # # wrapper for scipy's find_peaks
+  # def FindMinima1D(self, data):
+  #   # does nothing if data is already 1D
+  #   data1D = self.get_crosssection_y(data)
+  #   # negate data, find peaks-> find minima
+  #   # only consider heights: (-infty, 0). height=0 would filter out all "heights" below 0
+  #   # height is simply the value of -data1D
+  #   MinimaIndices, properties = find_peaks(-data1D, height = (None, 0), prominence = 0)
+  #   return MinimaIndices, properties
 
   # get indices where >ymin
   def SplitDomainRightIndices1D(self, ymin= None):
     if(ymin == None):
       ymin = self.Ly/2
+    # relevant indices after splitting the domain
     self.SplitDomainIndices = self.y>ymin
     self.Maskedy = self.y[self.SplitDomainIndices]
   # get values where >ymin
@@ -222,6 +248,12 @@ class solution:
   def MaskFromMaximumValue(self, properties, key, fraction):
     maximum = np.max(properties[key])
     return properties[key]>(maximum*fraction)
+  # def MaskFromMaximumValue(self, properties, key, fraction):
+  #   if(len(properties[key])) == 0:
+  #     return None
+  #   else:
+  #     maximum = np.max(properties[key])
+  #     return properties[key]>(maximum*fraction)
   # take each property and mask each array
   # for my purpose it would have been better if scipy.find_peaks returned an array
   # of peak objects so that each property value is tied to each peak

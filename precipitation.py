@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 import cuda
 from simulation import Simulation
-from solution import SolutionMeasures, solution, Field
+from solution import SolutionMeasures, solution, FieldProps
 
 class PrecipitiMeasures(SolutionMeasures):
   def __init__(self):
@@ -59,10 +59,11 @@ class precipiti(solution):
       if(self.nof >2):
         self.set_phi()
         self.set_zeta()
+        self.set_zeta1D()
       self.set_h()
       self.set_dfdh()
       self.set_disjp()
-      self.zeta1DDataProps = Field()
+      self.zeta1DProps = FieldProps()
       self.Measures = PrecipitiMeasures()
     else:
       DefaultParams(self)
@@ -121,8 +122,9 @@ class precipiti(solution):
         self.C0 = float(lines[i].split()[1])
       elif lines[i].split()[0] == 'Ceq':
         self.Ceq = float(lines[i].split()[1])
-  def set_Field(self, data, FieldName):
-    setattr(self, FieldName, Field(data, FieldName))
+  def set_FieldProps(self, data, FieldName):
+    FieldPropsName = FieldName + 'Props'
+    setattr(self, FieldPropsName, FieldProps(data, FieldName))
   ##### attributes with same shape as self.fields[i]
   def set_psi1(self):
     self.psi1 = self.fields[0]
@@ -145,8 +147,8 @@ class precipiti(solution):
     self.phi = self.fields[2]
   def set_zeta(self):
     self.zeta = self.fields[3]
-  def set_zeta1D(self):
-    self.zeta1D = self.get_crosssection_y(self.zeta)
+  def set_zeta1D(self, **kwargs):
+    self.zeta1D = self.get_crosssection_y(self.zeta, **kwargs)
   def set_dfdh(self):
     self.dfdh = self.h**(-3) - self.h**(-6)
   def set_disjp(self):
@@ -379,20 +381,69 @@ class precipiti(solution):
     # make sure data is 1D
     self.set_zeta1D()
     # allocate data to Field object
-    self.set_Field(self.zeta1D, 'zeta1DDataProps')
+    self.set_FieldProps(self.zeta1D, 'zeta1D')
     # find highest peaks
     PeakIndices, properties = self.FindHighestPeaksRight1D(self.zeta1D, *args, **kwargs)
     # save results
-    self.zeta1DDataProps.PeakIndices = PeakIndices
-    self.zeta1DDataProps.properties = properties
+    self.zeta1DProps.PeakIndices = PeakIndices
+    self.zeta1DProps.properties = properties
+    # shift index to match shape of full domain
+    self.ShiftIndices(self.zeta1DProps, 'PeakIndices')
+
+  def FindSmallestMinimaZetaPeaksRight1D(self, *args, **kwargs):
+    # make sure data is 1D
+    self.set_zeta1D()
+    # allocate data to Field object
+    self.set_FieldProps(self.zeta1D, 'zeta1D')
+    # find minima
+    MinimaIndices, properties = self.FindSmallestMinimaRight1D(self.zeta1D, *args, **kwargs)
+    # save results
+    self.zeta1DProps.MinimaIndices = MinimaIndices
+    self.zeta1DProps.properties = properties
+    # shift index to match shape of full domain
+    self.ShiftIndices(self.zeta1DProps, 'MinimaIndices')
+
+  # PeakIndices and MinimaIndices have different names, therefore need to use get/setattr
+  def ShiftIndices(self, FieldProps, IndicesStr):
+    Indices = getattr(FieldProps, IndicesStr) + self.Ny - len(self.Maskedy)
+    setattr(FieldProps, IndicesStr, Indices)
+
+
+  # find the peak that is closest to the measurepoint
+  # depending on how the peak is measured, it may be the position of the maximum or the minimum
+  def PositionOfPeakClosestToMP(self, MeasurePoint):
+    positions = self.zeta1DProps.properties['positions']
+    distances = np.abs(positions - MeasurePoint)
+    # Index relative to the peaks
+    ClosestPeakIndex = np.argmin(distances)
+    ClosestPeakPosition = positions[ClosestPeakIndex]
+    return ClosestPeakPosition, ClosestPeakIndex
+
+  def GetPeakLeftOfMinimum(self, FieldProperties, Index):
+    if(len(FieldProperties.MinimaIndices)==1):
+      print(self.imagenumber, self.t)
+      raise ErrorOnlyOneMinimum(
+        'Check if solution has advected by one domain, is periodic and has not \
+         too large period. Else, try increasing domain size')
+    # apply to MinimaIndices
+    PeakMinIdx = FieldProperties.MinimaIndices[Index - 1]
+    PeakMaxIdx = FieldProperties.MinimaIndices[Index]
+    IntervalIndices = np.array([PeakMinIdx, PeakMaxIdx])
+    # element number PeakMaxIdx itself is left out
+    PeakInterval = slice(PeakMinIdx, PeakMaxIdx)
+    # apply to actual data
+    yPeak = self.y[PeakInterval]
+    Peak = getattr(self, FieldProperties.FieldName)[PeakInterval]
+    return yPeak, Peak, IntervalIndices
 
   # need to provide data from FindHighestPeaksMasked1D
   # take data of rightmost peak as Measures
-  def SetPeriodicSolutionMeasures(self):
-    self.Measures.PeakIndex = self.zeta1DDataProps.PeakIndices[-1]
-    self.Measures.Height = self.zeta1DDataProps.properties['peak_heights'][-1]
-    self.Measures.Prominence = self.zeta1DDataProps.properties['prominences'][-1]
-    self.Measures.Base = self.zeta1DDataProps.properties['left_bases'][-1]
+  # def SetPeriodicSolutionMeasures(self):
+  #   self.Measures.PeakIndex = self.zeta1DProps.PeakIndices[-1]
+  #   self.Measures.PeakPosition = self.y[self.Measures.PeakIndex]
+  #   self.Measures.Height = self.zeta1DProps.properties['peak_heights'][-1]
+  #   self.Measures.Prominence = self.zeta1DProps.properties['prominences'][-1]
+  #   self.Measures.Base = self.zeta1DProps.properties['left_bases'][-1]
 
   ##### 0 dimensional attributes
   def mean(self, field):
@@ -567,3 +618,7 @@ class XuMeakinSimu(Simulation):
   def __init__(self, path, start = None, end = None):
     super().__init__(path, start = None, end = None)
     self.objectclass = XuMeakin
+
+
+class ErrorOnlyOneMinimum(Exception):
+  pass
