@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 import cuda
 from simulation import Simulation
-from solution import SolutionMeasures, solution, FieldProps
+from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
 class PrecipitiMeasures(SolutionMeasures):
   def __init__(self):
@@ -419,8 +419,10 @@ class precipiti(solution):
     ClosestPeakPosition = positions[ClosestPeakIndex]
     return ClosestPeakPosition, ClosestPeakIndex
 
-  def GetPeakLeftOfMinimum(self, FieldProperties, Index):
-    if(len(FieldProperties.MinimaIndices)==1):
+  def SetPeakLeftOfMinimum(self, FieldProperties, Index):
+    if(len(FieldProperties.MinimaIndices)==0):
+      raise ErrorNoExtrema('This should not happen as there should not exist an index. ')
+    elif(len(FieldProperties.MinimaIndices)==1):
       print(self.imagenumber, self.t)
       raise ErrorOnlyOneMinimum(
         'Check if solution has advected by one domain, is periodic and has not \
@@ -428,22 +430,27 @@ class precipiti(solution):
     # apply to MinimaIndices
     PeakMinIdx = FieldProperties.MinimaIndices[Index - 1]
     PeakMaxIdx = FieldProperties.MinimaIndices[Index]
-    IntervalIndices = np.array([PeakMinIdx, PeakMaxIdx])
     # element number PeakMaxIdx itself is left out
-    PeakInterval = slice(PeakMinIdx, PeakMaxIdx)
+    PeakIndices = range(PeakMinIdx, PeakMaxIdx)
     # apply to actual data
-    yPeak = self.y[PeakInterval]
-    Peak = getattr(self, FieldProperties.FieldName)[PeakInterval]
-    return yPeak, Peak, IntervalIndices
+    yPeak = self.y[PeakIndices]
+    Peak = getattr(self, FieldProperties.FieldName)[PeakIndices]
+    FieldProperties.PeakIndices = PeakIndices
+    FieldProperties.yPeak = yPeak
+    FieldProperties.Peak = Peak
+    # use this to verify that positions and yPeak match
+    # you can also see how element number PeakMaxIdx itself is left out
+    # print(FieldProperties.properties['positions'], yPeak, Peak)
+    # return yPeak, Peak, PeakIndices
 
   # need to provide data from FindHighestPeaksMasked1D
   # take data of rightmost peak as Measures
-  # def SetPeriodicSolutionMeasures(self):
-  #   self.Measures.PeakIndex = self.zeta1DProps.PeakIndices[-1]
-  #   self.Measures.PeakPosition = self.y[self.Measures.PeakIndex]
-  #   self.Measures.Height = self.zeta1DProps.properties['peak_heights'][-1]
-  #   self.Measures.Prominence = self.zeta1DProps.properties['prominences'][-1]
-  #   self.Measures.Base = self.zeta1DProps.properties['left_bases'][-1]
+  def SetPeriodicSolutionMeasures(self):
+    self.Measures.Max = self.zeta1DProps.GetMax()
+    self.Measures.MaxPos = self.zeta1DProps.GetMaxPos()
+    self.Measures.MinHeight = self.zeta1DProps.GetMin()
+    self.Measures.MinPos = self.zeta1DProps.GetMinPos()
+    self.Measures.Prominence = self.Measures.Max - self.Measures.MinHeight
 
   ##### 0 dimensional attributes
   def mean(self, field):
