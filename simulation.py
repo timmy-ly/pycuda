@@ -50,6 +50,7 @@ class Simulation:
       self.readparams(filepath = self.path)
       self.set_solutions(pattern = self.pattern)
       self.sort_solutions(attribute = self.attribute)
+      self.set_time()
     else:
       self.path = None
   # read simulation parameters as attribute of type dict, default file is 0th frame
