@@ -15,6 +15,19 @@ class FieldProps:
     self.FieldName = FieldName
     self.data = data
     self.dim = len(np.shape(data))
+    self.Peak = None
+  def GetMaxIdx(self):
+    return np.argmax(self.Peak)
+  def GetMax(self):
+    return self.Peak[self.GetMaxIdx()]
+  def GetMaxPos(self):
+    return self.yPeak[self.GetMaxIdx()]
+  # minimum should be the left most position of the peak
+  def GetMin(self):
+    return self.Peak[0]
+  def GetMinPos(self):
+    return self.yPeak[0]
+
 
 
 # class for a solution (for some time t) from cuda data
