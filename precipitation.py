@@ -1,9 +1,11 @@
 import numpy as np
 from pathlib import Path
 import cuda
-from simulation import Simulation
+from simulation import Simulation, SimulMeasures
 from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
+class ErrorOnlyOneMinimum(Exception):
+  pass
 class PrecipitiMeasures(SolutionMeasures):
   def __init__(self):
     super().__init__()
@@ -13,6 +15,35 @@ class PrecipitiMeasures(SolutionMeasures):
     self.Prominence = None
     self.Base = None
 
+class PrecipitiSimulMeasures(SimulMeasures):
+  def __init__(self):
+    super().__init__()
+    self.t = []
+    self.dt = None
+    self.MaximumThickness = []
+    self.BaseThickness = []
+    self.Prominence = []
+    self.MeanMaximumThickness = None
+    self.MeanBaseThickness = None
+    self.MeanProminence = None
+  # save measures
+  def SaveListMeasures(self, sol):
+    self.t.append(sol.t)
+    self.MaximumThickness.append(sol.Measures.Max)
+    self.BaseThickness.append(sol.Measures.MinHeight)
+    self.Prominence.append(sol.Measures.Prominence)
+  def ListsToArrays(self):
+    self.t = np.array(self.t)
+    self.MaximumThickness = np.array(self.MaximumThickness)
+    self.BaseThickness = np.array(self.BaseThickness)
+    self.Prominence = np.array(self.Prominence)
+  def SetValues(self):
+    self.ListsToArrays()
+    self.dt = self.t - np.roll(self.t, 1)
+    TimeWindow = self.t[-1] - self.t[0]
+    self.MeanMaximumThickness = np.sum(self.dt[1:]*self.MaximumThickness[1:])/TimeWindow
+    self.MeanBaseThickness = np.sum(self.dt[1:]*self.BaseThickness[1:])/TimeWindow
+    self.MeanProminence = np.sum(self.dt[1:]*self.Prominence[1:])/TimeWindow
 
 def DefaultParams(object):
   print("Applying DefaultParams")
@@ -526,9 +557,49 @@ class precipiti(solution):
 class PrecipitiSimu(Simulation):
   def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', objectclass = precipiti):
     super().__init__(path, start = start, end = end, file = file, objectclass = objectclass)
-    # self.objectclass = objectclass
+    self.Measures = PrecipitiSimulMeasures()
+
+  # Calculate the simulation measures, mainly for periodic solutions
+  # havent tested yet if it successfully ignores non-periodic solutions
+  # RelativeMeasurePt: at which relative point(left of it) in the domain the peaks are measured
+  # FractionOfMaximumProminence: only smallest minima are considered. However
+  # since the minima tend to be larger on the right, there needs to be a bit of tolerance for
+  # the minima. 0.9 means that all minima are considered that are at least 0.9 as prominent/deep
+  # as the smallest minimum
+  # NoDomains: Since the system is advected, we can approximately calculate how long it takes
+  # for drawn out material to reach the end of the domain
+  # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
+  # should be >1
+
+  def SetMeasures(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, NoDomains = 1.2):
+    MeasurePt = RelativeMeasurePt*self.params["Ly"]
+    ClosestPeakPositionOld = 0
+    tmin = self.params['Ly']/self.params['v']*NoDomains
+    for sol in self.sols:
+      if(sol.t < tmin):
+        continue
+      try:
+        sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence)
+      except ErrorNoExtrema:
+        continue
+      ClosestPeakPosition, ClosestPeakIndex = sol.PositionOfPeakClosestToMP(MeasurePt)
+      if(ClosestPeakPosition>MeasurePt) and (ClosestPeakPositionOld <= MeasurePt):
+        FieldProperties = sol.zeta1DProps
+        # take data from closest peak
+        sol.SetPeakLeftOfMinimum(FieldProperties, ClosestPeakIndex)
+        sol.SetPeriodicSolutionMeasures()
+        # since there wont be many periods, we simply append
+        # append is faster for lists than for numpy arrays
+        # try:
+        self.Measures.SaveListMeasures(sol)
+        # except TypeError:
+        #   print(sol)
+        #   exit()
+      ClosestPeakPositionOld = ClosestPeakPosition
+    # calculate Simulation measures after individual peaks have been analyzed
+    self.Measures.SetValues()
+
   # expected equilibrium precursor height, depending on Ups, Mu, Chi and initial concentration c
-  # requires 
   def set_hp(self, c):
     if(self.sols is not None):
       sol = self.sols[0]
@@ -626,6 +697,3 @@ class XuMeakinSimu(Simulation):
     super().__init__(path, start = None, end = None)
     self.objectclass = XuMeakin
 
-
-class ErrorOnlyOneMinimum(Exception):
-  pass
