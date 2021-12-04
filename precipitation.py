@@ -6,6 +6,8 @@ from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
 class ErrorOnlyOneMinimum(Exception):
   pass
+class ErrorSimulatedTooShort(Exception):
+  pass
 class PrecipitiMeasures(SolutionMeasures):
   def __init__(self):
     super().__init__()
@@ -570,34 +572,52 @@ class PrecipitiSimu(Simulation):
   # for drawn out material to reach the end of the domain
   # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
   # should be >1
-
   def SetMeasures(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, NoDomains = 1.2):
+    # Spatial coordinate a peak has to pass to be measured
     MeasurePt = RelativeMeasurePt*self.params["Ly"]
+    # initialize ClosestPeakPositionOld
     ClosestPeakPositionOld = 0
-    tmin = self.params['Ly']/self.params['v']*NoDomains
+    # return if calculated not long enough
+    if(not self.CheckSimulDuration(NoDomains)):
+      return False
+    # self.CheckIfStationary()
+    # main algorithm. loop through each timestep to find the peaks and measure their properties
     for sol in self.sols:
-      if(sol.t < tmin):
-        continue
+      # look for peaks (by looking for minima)
       try:
         sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence)
       except ErrorNoExtrema:
         continue
+      # take the peak closest to the measurept
       ClosestPeakPosition, ClosestPeakIndex = sol.PositionOfPeakClosestToMP(MeasurePt)
+      # if the peak is on the right. Check if it previously was on the left. Only 
+      # save Measures if a peak has just passed Measurept
       if(ClosestPeakPosition>MeasurePt) and (ClosestPeakPositionOld <= MeasurePt):
+        # create attrbibute to save Measures in
         FieldProperties = sol.zeta1DProps
         # take data from closest peak
         sol.SetPeakLeftOfMinimum(FieldProperties, ClosestPeakIndex)
         sol.SetPeriodicSolutionMeasures()
         # since there wont be many periods, we simply append
         # append is faster for lists than for numpy arrays
-        # try:
         self.Measures.SaveListMeasures(sol)
-        # except TypeError:
-        #   print(sol)
-        #   exit()
       ClosestPeakPositionOld = ClosestPeakPosition
     # calculate Simulation measures after individual peaks have been analyzed
     self.Measures.SetValues()
+    return True
+  # Check if the simulation has even run long enough
+  def CheckSimulDuration(self, NoDomains = 1):
+    tmin = self.params['Ly']/self.params['v']*NoDomains
+    if(self.t[-1]>tmin):
+      return True
+    else:
+      print('Simulation is too short:')
+      print(str(self.path))
+      return False
+  # takes the last timestep and up to Deltat previous times
+  # sum up the errors 
+  def CheckIfStationary(self, DeltaT = 11):
+    pass
 
   # expected equilibrium precursor height, depending on Ups, Mu, Chi and initial concentration c
   def set_hp(self, c):
