@@ -12,7 +12,7 @@ def convert(val):
     except ValueError:
       pass
 
-class SimulMeasure:
+class SimulMeasures:
   def __init__(self):
     self.t = None
 
