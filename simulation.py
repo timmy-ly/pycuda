@@ -3,7 +3,7 @@ from solution import solution
 from pathlib import Path,PurePath
 
 # default values
-attribute = 't'
+attribute = 'imagenumber'
 def convert(val):
   constructors = [int, float, str]
   for c in constructors:
