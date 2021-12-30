@@ -452,14 +452,16 @@ class precipiti(solution):
     ClosestPeakPosition = positions[ClosestPeakIndex]
     return ClosestPeakPosition, ClosestPeakIndex
 
+  # get the coordinates and values of the peak left of the minimum that just passed the measurepoint
+  # MinimaIndices must be of at least length 2. Otherwise it is unknown where to stop the peak starts or ends
   def SetPeakLeftOfMinimum(self, FieldProperties, Index):
-    if(len(FieldProperties.MinimaIndices)==0):
-      raise ErrorNoExtrema('This should not happen as there should not exist an index. ')
-    elif(len(FieldProperties.MinimaIndices)==1):
-      print(self.imagenumber, self.t)
-      raise ErrorOnlyOneMinimum(
-        'Check if solution has advected by one domain, is periodic and has not \
-         too large period. Else, try increasing domain size')
+    # if(len(FieldProperties.MinimaIndices)==0):
+    #   raise ErrorNoExtrema('This should not happen as there should not exist an index. ')
+    # elif(len(FieldProperties.MinimaIndices)==1):
+    #   print(self.imagenumber, self.t)
+    #   raise ErrorOnlyOneMinimum(
+    #     'Check if solution has advected by one domain, is periodic and has not \
+    #      too large period. Else, try increasing domain size')
     # apply to MinimaIndices
     PeakMinIdx = FieldProperties.MinimaIndices[Index - 1]
     PeakMaxIdx = FieldProperties.MinimaIndices[Index]
@@ -583,13 +585,21 @@ class PrecipitiSimu(Simulation):
     # self.CheckIfStationary()
     # main algorithm. loop through each timestep to find the peaks and measure their properties
     for sol in self.sols:
+      # print(sol.imagenumber)
       # look for peaks (by looking for minima)
       try:
         sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence)
       except ErrorNoExtrema:
         continue
+      # continue if minimaindices has length less than 2, since then the boundaries of the peak are unknown
+      if(len(sol.zeta1DProps.MinimaIndices)<2):
+        continue
       # take the peak closest to the measurept
       ClosestPeakPosition, ClosestPeakIndex = sol.PositionOfPeakClosestToMP(MeasurePt)
+      # if the minimum closest to the measurepoint is the first minimum, there is no other minimum on the left
+      # this messes up the peak indices if not handled (min=index-1, max=index. Index=0 is problematic)
+      if(ClosestPeakIndex == 0):
+        continue
       # if the peak is on the right. Check if it previously was on the left. Only 
       # save Measures if a peak has just passed Measurept
       if(ClosestPeakPosition>MeasurePt) and (ClosestPeakPositionOld <= MeasurePt):
