@@ -81,6 +81,7 @@ class precipiti(solution):
       self.path = Path(path)
       # try:
       self.readparams(self.path)
+      self.set_SpatialDimensions()
       self.set_coordinates()
       self.set_SpatialGrid1Dy()
       self.fields = cuda.readbin(self)

@@ -39,6 +39,7 @@ class solution:
     self.dtype = 'double'
     self.Nx = None
     self.Ny = None
+    self.dim = None
     self.dt = None
     # problem
     self.Lx = None
@@ -124,6 +125,12 @@ class solution:
   def dy4(self):
     return self.dy()*self.dy()*self.dy()*self.dy()
   
+  def set_SpatialDimensions(self):
+    if(self.Nx == 1):
+      self.dim = 1
+    else:
+      self.dim = 2
+
   # 2d arrays of y and x
   def set_coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):
     if Lx is not None:
