@@ -101,24 +101,27 @@ def readbalance(filepath, n=0):
 def DifferenceNorm(sol1, sol2):
   if(sol1.Ny != sol1.Ny):
     raise GridError('y-dimensions do not match')
-  # print(np.shape(sol1.fields), np.shape(sol2.fields))
   # make use of numpy's broadcasting rules. All dimensions match except for possibly the x-dimension which is then 1 (if you compare 2d with 1d)
   # Then the axis of length 1 will be broadcast to match the other solution's axis' length
   Difference = sol1.fields - sol2.fields
-  # print(np.shape(Difference))
-  return np.sum(np.abs(Difference))
+  # calculate norm for each field (sum over second and third axis)
+  Norm = np.sum(np.abs(Difference), (1,2))
+  # verify shape, should be 1D array of length 4
+  print(np.shape(Norm))
+  return Norm
 
 # Simul1 and Simul2 must have same indices and timesteps
 # cant always use condition that the solution time t is equal since the timestep MIGHT be different 
 # depending on the purpose of the comparison
 def DifferenceNormEvolution(Simul1, Simul2):
+  nof = len(Simul1.sols[0].fields)
   if(len(Simul1.sols)>len(Simul2.sols)):
     n = len(Simul2.sols)
   else:
     n = len(Simul1.sols)
-  DifferenceNormArray = np.zeros(n) 
+  DifferenceNormArray = np.zeros((nof, n))
   for i in range(n):
-    DifferenceNormArray[i] = DifferenceNorm(Simul1.sols[i],Simul2.sols[i])
+    DifferenceNormArray[:,i] = DifferenceNorm(Simul1.sols[i],Simul2.sols[i])
   # print(np.shape(Simul1.t[range(n)]), np.shape(DifferenceNormArray))
   return Simul1.t[range(n)], DifferenceNormArray
 
