@@ -12,6 +12,10 @@ class ArgumentsError(Error):
       message -- explanation of the error"""
   def __init__(self, message):
       self.message = message
+class GridError(Error):
+  """Exception raised for mismatched grid parameters."""
+  def __init__(self, message):
+      self.message = message
 # class GridSpacing:
 #   def __init__(self, dx):
 #     self.dx = dx
@@ -90,6 +94,35 @@ def readbalance(filepath, n=0):
   # create copy of data that keeps column 0 and removes columns
   # 1 to n, np.s_ is a slice, last argument is axis
   return np.delete(data,np.s_[1:-n],1)
+
+# calculate difference between two solutions and take norm
+# only works on the standard sol.fields
+# use different method for other fields
+def DifferenceNorm(sol1, sol2):
+  if(sol1.Ny != sol1.Ny):
+    raise GridError('y-dimensions do not match')
+  # print(np.shape(sol1.fields), np.shape(sol2.fields))
+  # make use of numpy's broadcasting rules. All dimensions match except for possibly the x-dimension which is then 1 (if you compare 2d with 1d)
+  # Then the axis of length 1 will be broadcast to match the other solution's axis' length
+  Difference = sol1.fields - sol2.fields
+  # print(np.shape(Difference))
+  return np.sum(np.abs(Difference))
+
+# Simul1 and Simul2 must have same indices and timesteps
+# cant always use condition that the solution time t is equal since the timestep MIGHT be different 
+# depending on the purpose of the comparison
+def DifferenceNormEvolution(Simul1, Simul2):
+  if(len(Simul1.sols)>len(Simul2.sols)):
+    n = len(Simul2.sols)
+  else:
+    n = len(Simul1.sols)
+  DifferenceNormArray = np.zeros(n) 
+  for i in range(n):
+    DifferenceNormArray[i] = DifferenceNorm(Simul1.sols[i],Simul2.sols[i])
+  # print(np.shape(Simul1.t[range(n)]), np.shape(DifferenceNormArray))
+  return Simul1.t[range(n)], DifferenceNormArray
+
+
 
 # interpolate array with Nx, Ny, Lx, Ly to newNx, Newy
 def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
