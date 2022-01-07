@@ -105,7 +105,9 @@ def DifferenceNorm(sol1, sol2):
   # Then the axis of length 1 will be broadcast to match the other solution's axis' length
   Difference = sol1.fields - sol2.fields
   # calculate norm for each field (sum over second and third axis)
-  Norm = np.sum(np.abs(Difference), (1,2))
+  # Norm = np.sum(np.abs(Difference), (1,2))
+  # take maximum error per field
+  Norm = np.amax(np.abs(Difference), (1,2))
   return Norm
 
 # Simul1 and Simul2 must have same indices and timesteps
