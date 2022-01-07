@@ -106,8 +106,6 @@ def DifferenceNorm(sol1, sol2):
   Difference = sol1.fields - sol2.fields
   # calculate norm for each field (sum over second and third axis)
   Norm = np.sum(np.abs(Difference), (1,2))
-  # verify shape, should be 1D array of length 4
-  print(np.shape(Norm))
   return Norm
 
 # Simul1 and Simul2 must have same indices and timesteps
