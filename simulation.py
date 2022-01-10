@@ -1,6 +1,7 @@
 import numpy as np
 from solution import solution
 from pathlib import Path,PurePath
+import cuda
 
 # default values
 attribute = 'imagenumber'
@@ -164,9 +165,29 @@ class Simulation:
       getattr(sol, FunctionHandle)(*args)
   def GetMax(self, Attribute):
     return np.nanmax([getattr(sol, Attribute) for sol in self.sols])
-  
-
-  
+  # check if the solution is stationary
+  # eps: threshold / maximum error
+  # n: last n frames to use
+  def CheckIfStationary(self, eps = 1e-10, n = 100):
+    # initialize maximumerror
+    self.MaximumError = 0
+    # loop through last n solutions
+    for i in np.arange(n):
+      # map i such that indices go from small to big
+      index = i - n
+      # take previous solution as reference
+      sol1 = self.sols[index - 1]
+      sol2 = self.sols[index]
+      # maximum of norm is enough
+      Norm = np.max(cuda.DifferenceNorm(sol1, sol2))
+      # save maximumerror
+      if(Norm > self.MaximumError):
+        self.MaximumError = Norm
+      # check if any error surpasses threshold
+      if(Norm > eps):
+        return False
+    return True
+    
 
   
     
