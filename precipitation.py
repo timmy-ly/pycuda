@@ -189,8 +189,16 @@ class precipiti(solution):
     self.disjp = -self.h**(-3) + self.h**(-6)
   def set_dypsi1(self):
     self.dypsi1 = self.dy4_m22(self.psi1)
+  def set_adv1(self):
+    self.adv1 = cuda.dy4_m31(self.psi1, self.dx())
   def set_dypsi2(self):
     self.dypsi2 = self.dy4_m22(self.psi2)
+  def set_adv2(self):
+    self.adv2 = cuda.dy4_m31(self.psi2, self.dx())
+  def set_advphi(self):
+    self.advphi = cuda.dy4_m31(self.phi, self.dx())
+  def set_advzeta(self):
+    self.advzeta = cuda.dy4_m31(self.zeta, self.dx())
   def set_dyh(self):
     self.dyh = self.dy4_m22(self.h)
   def set_dyyh(self):
@@ -291,7 +299,7 @@ class precipiti(solution):
     self.set_dyM1()
     self.set_Gy()
     self.set_dyGy()
-    self.conv1rate = -( self.dyM1*(self.dyyyh - dydfdh) + self.M1*(self.dyyyyh - dyydfdh) - self.dyM1*self.Gy - self.M1*self.dyGy + self.v*self.dypsi1 )
+    self.conv1rate = -( self.dyM1*(self.dyyyh - dydfdh) + self.M1*(self.dyyyyh - dyydfdh) - self.dyM1*self.Gy - self.M1*self.dyGy + self.v*self.adv1 )
   def set_conv1rateComoving(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -333,7 +341,7 @@ class precipiti(solution):
     self.set_dyM2()
     self.set_Gy()
     self.set_dyGy()
-    self.conv2rate = -( self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy + self.v*self.dypsi2 )
+    self.conv2rate = -( self.dyM2*(self.dyyyh - dydfdh) + self.M2*(self.dyyyyh - dyydfdh) - self.dyM2*self.Gy - self.M2*self.dyGy + self.v*self.adv2 )
   def set_conv2rateComoving(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
@@ -397,17 +405,30 @@ class precipiti(solution):
   # this needs to be added for 2D!
   def set_MeanCurv(self):
     self.MeanCurv = 0.0
-  # set time derivative of phi but without advection
-  def set_DtPhiNoAdvec(self):
-    self.CheckSetAttr("dyyphi", "dfXMdphi", "MeanCurv")
-    self.DtPhiNoAdvec = self.sigma*(self.dyyphi/(self.LAMB*self.LAMB) - self.dfXMdphi - self.MeanCurv/(self.LAMB*self.LAMB))
-  def set_dtpsi1(self):
+  def set_dtpsi1Comov(self):
     self.CheckSetAttr("conv1rateComoving", "diff1rateMasked", "MaskedEvap")
-    self.dtpsi1 = self.conv1rateComoving + self.diff1rateMasked + self.MaskedEvap
+    self.dtpsi1Comov = self.conv1rateComoving + self.diff1rateMasked + self.MaskedEvap
+  def set_dtpsi2Comov(self):
+    self.CheckSetAttr("conv2rateComoving", "diff2rateMasked", "dtphiComov")
+    self.dtpsi2Comov = self.conv2rateComoving + self.diff2rateMasked + self.alpha*self.h*self.dtphiComov 
+  def set_dtpsi1(self):
+    self.CheckSetAttr("conv1rate", "diff1rateMasked", "MaskedEvap")
+    self.dtpsi1 = self.conv1rate + self.diff1rateMasked + self.MaskedEvap
   def set_dtpsi2(self):
-    self.CheckSetAttr("conv2rateComoving", "diff2rateMasked", "DtPhiNoAdvec")
-    self.dtpsi2 = self.conv2rateComoving + self.diff2rateMasked + self.alpha*self.h*self.DtPhiNoAdvec 
-
+    self.CheckSetAttr("conv2rate", "diff2rateMasked", "dtphi")
+    self.dtpsi2 = self.conv2rate + self.diff2rateMasked + self.alpha*self.h*self.dtphi 
+# set time derivative of phi but without advection
+  def set_dtphiComov(self):
+    self.CheckSetAttr("dyyphi", "dfXMdphi", "MeanCurv")
+    self.dtphiComov = self.sigma*(self.dyyphi/(self.LAMB*self.LAMB) - self.dfXMdphi - self.MeanCurv/(self.LAMB*self.LAMB))
+  # set time derivative (or rhs) of phi
+  def set_dtphi(self):
+    self.CheckSetAttr("dtphiComov")
+    self.dtphi = self.dtphiComov - self.v*self.advphi
+  def set_dtzeta(self):
+    self.CheckSetAttr("dtphiComov")
+    self.dtzeta = -self.alpha*self.h*self.dtphiComov - self.v*self.advzeta
+  
   # complex attributes
   # Find largest peaks of zeta on the right
   # wrapper for FindHighestPeaksRight1D
@@ -581,7 +602,7 @@ class PrecipitiSimu(Simulation):
     # initialize ClosestPeakPositionOld
     ClosestPeakPositionOld = 0
     # return if calculated not long enough
-    if(not self.CheckSimulDuration(NoDomains)):
+    if(not self.MinimumDurationPassed(NoDomains)):
       return False
     # self.CheckIfStationary()
     # main algorithm. loop through each timestep to find the peaks and measure their properties
@@ -617,7 +638,7 @@ class PrecipitiSimu(Simulation):
     self.Measures.SetValues()
     return True
   # Check if the simulation has even run long enough
-  def CheckSimulDuration(self, NoDomains = 1):
+  def MinimumDurationPassed(self, NoDomains = 1):
     tmin = self.params['Ly']/self.params['v']*NoDomains
     if(self.t[-1]>tmin):
       return True
@@ -625,10 +646,7 @@ class PrecipitiSimu(Simulation):
       print('Simulation is too short:')
       print(str(self.path))
       return False
-  # takes the last timestep and up to Deltat previous times
-  # sum up the errors 
-  def CheckIfStationary(self, DeltaT = 11):
-    pass
+
 
   # expected equilibrium precursor height, depending on Ups, Mu, Chi and initial concentration c
   def set_hp(self, c):
