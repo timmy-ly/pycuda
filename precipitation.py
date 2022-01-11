@@ -417,7 +417,7 @@ class precipiti(solution):
   def set_dtpsi2(self):
     self.CheckSetAttr("conv2rate", "diff2rateMasked", "dtphi")
     self.dtpsi2 = self.conv2rate + self.diff2rateMasked + self.alpha*self.h*self.dtphi 
-# set time derivative of phi but without advection
+  # set time derivative of phi but without advection
   def set_dtphiComov(self):
     self.CheckSetAttr("dyyphi", "dfXMdphi", "MeanCurv")
     self.dtphiComov = self.sigma*(self.dyyphi/(self.LAMB*self.LAMB) - self.dfXMdphi - self.MeanCurv/(self.LAMB*self.LAMB))
@@ -429,7 +429,7 @@ class precipiti(solution):
     self.CheckSetAttr("dtphiComov")
     self.dtzeta = -self.alpha*self.h*self.dtphiComov - self.v*self.advzeta
   
-  # complex attributes
+# complex attributes
   # Find largest peaks of zeta on the right
   # wrapper for FindHighestPeaksRight1D
   def FindHighestZetaPeaksRight1D(self, *args, **kwargs):
@@ -646,6 +646,21 @@ class PrecipitiSimu(Simulation):
     else:
       print('Simulation is too short:')
       print(str(self.path))
+      return False
+  # Check if the last n solutions have at least one ridge, aka at least one local maximum
+  def HasRidge(self, n = 100, **kwargs):
+    try:
+      # loop through solutions
+      for sol in self.sols[-n:]:
+        data1D = sol.get_crosssection_y(sol.h)
+        # allocate data to Field object
+        if(not hasattr(self, 'h1DProps')):
+          self.set_FieldProps(data1D, 'h1D')
+        PeakIndices, properties = self.FindPeaks1D(data1D, **kwargs)
+        self.h1DProps.MaximaIndices = PeakIndices
+        self.h1DProps.properties = properties
+      return True
+    except ErrorNoExtrema:
       return False
 
 
