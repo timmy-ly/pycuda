@@ -95,15 +95,19 @@ def readbalance(filepath, n=0):
   # 1 to n, np.s_ is a slice, last argument is axis
   return np.delete(data,np.s_[1:-n],1)
 
-# calculate difference between two solutions and take norm
-# only works on the standard sol.fields
-# use different method for other fields
-def DifferenceNorm(sol1, sol2):
+# calculate difference between two solutions
+def DifferenceSols(sol1, sol2):
   if(sol1.Ny != sol1.Ny):
     raise GridError('y-dimensions do not match')
   # make use of numpy's broadcasting rules. All dimensions match except for possibly the x-dimension which is then 1 (if you compare 2d with 1d)
   # Then the axis of length 1 will be broadcast to match the other solution's axis' length
   Difference = sol1.fields - sol2.fields
+  return Difference
+# and take norm
+# only works on the standard sol.fields
+# use different method for other fields
+def DifferenceNorm(sol1, sol2):
+  Difference = DifferenceSols(sol1, sol2)
   # calculate norm for each field (sum over second and third axis)
   # Norm = np.sum(np.abs(Difference), (1,2))
   # take maximum error per field
@@ -114,15 +118,21 @@ def DifferenceNorm(sol1, sol2):
 # cant always use condition that the solution time t is equal since the timestep MIGHT be different 
 # depending on the purpose of the comparison
 def DifferenceNormEvolution(Simul1, Simul2):
+  # get number of fields
   nof = len(Simul1.sols[0].fields)
+  # take into account that the simulations may be of different lengths
+  # only compare up until end of shorter one
   if(len(Simul1.sols)>len(Simul2.sols)):
     n = len(Simul2.sols)
   else:
     n = len(Simul1.sols)
+  # initialize the error array
   DifferenceNormArray = np.zeros((nof, n))
+  # calculate the error for each timestep
   for i in range(n):
     DifferenceNormArray[:,i] = DifferenceNorm(Simul1.sols[i],Simul2.sols[i])
   # print(np.shape(Simul1.t[range(n)]), np.shape(DifferenceNormArray))
+  # return the time steps and errors
   return Simul1.t[range(n)], DifferenceNormArray
 
 
