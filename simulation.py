@@ -50,6 +50,7 @@ class Simulation:
     self.objectclass = objectclass
     self.start = start
     self.end = end
+    self.SolutionType = 'Unknown'
     # read simulation parameters if path is present
     if path is not None:
       self.path = Path(PurePath(path))
@@ -168,7 +169,7 @@ class Simulation:
   # check if the solution is stationary
   # eps: threshold / maximum error
   # n: last n frames to use
-  def CheckIfStationary(self, eps = 1e-10, n = 100):
+  def IsStationary(self, eps = 1e-10, n = 100):
     # initialize maximumerror
     self.MaximumError = 0
     # loop through last n solutions
@@ -185,8 +186,10 @@ class Simulation:
         self.MaximumError = Norm
       # check if any error surpasses threshold
       if(Norm > eps):
-        return False
-    return True
+        self.SolutionType = 'NotStationary'
+        return
+    self.SolutionType = 'Stationary'
+    return
     
 
   

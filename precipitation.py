@@ -603,6 +603,7 @@ class PrecipitiSimu(Simulation):
     ClosestPeakPositionOld = 0
     # return if calculated not long enough
     if(not self.MinimumDurationPassed(NoDomains)):
+      self.SolutionType = 'TooShort'
       return False
     # self.CheckIfStationary()
     # main algorithm. loop through each timestep to find the peaks and measure their properties
