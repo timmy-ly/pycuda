@@ -29,7 +29,7 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanBaseThickness = None
     self.MeanProminence = None
   # save measures
-  def SaveListMeasures(self, sol):
+  def SaveMeasuresToLists(self, sol):
     self.t.append(sol.t)
     self.MaximumThickness.append(sol.Measures.Max)
     self.BaseThickness.append(sol.Measures.MinHeight)
@@ -39,13 +39,18 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MaximumThickness = np.array(self.MaximumThickness)
     self.BaseThickness = np.array(self.BaseThickness)
     self.Prominence = np.array(self.Prominence)
-  def SetValues(self):
+  # calculate the periods and means
+  def SetFinalMeasures(self):
     self.ListsToArrays()
-    self.dt = self.t - np.roll(self.t, 1)
+    # calculate Periods
+    self.Periods = self.t - np.roll(self.t, 1)
     TimeWindow = self.t[-1] - self.t[0]
-    self.MeanMaximumThickness = np.sum(self.dt[1:]*self.MaximumThickness[1:])/TimeWindow
-    self.MeanBaseThickness = np.sum(self.dt[1:]*self.BaseThickness[1:])/TimeWindow
-    self.MeanProminence = np.sum(self.dt[1:]*self.Prominence[1:])/TimeWindow
+    # since numpy.roll uses periodic BC, we need to drop index 0
+    self.MeanMaximumThickness = np.sum(self.Periods[1:]*self.MaximumThickness[1:])/TimeWindow
+    self.MeanBaseThickness = np.sum(self.Periods[1:]*self.BaseThickness[1:])/TimeWindow
+    self.MeanProminence = np.sum(self.Periods[1:]*self.Prominence[1:])/TimeWindow
+    self.Periods = self.Periods[1:]
+    self.MeanPeriod = np.mean(self.Periods)
 
 def DefaultParams(object):
   print("Applying DefaultParams")
@@ -633,10 +638,10 @@ class PrecipitiSimu(Simulation):
         sol.SetPeriodicSolutionMeasures()
         # since there wont be many periods, we simply append
         # append is faster for lists than for numpy arrays
-        self.Measures.SaveListMeasures(sol)
+        self.Measures.SaveMeasuresToLists(sol)
       ClosestPeakPositionOld = ClosestPeakPosition
     # calculate Simulation measures after individual peaks have been analyzed
-    self.Measures.SetValues()
+    self.Measures.SetFinalMeasures()
     return True
   # Check if the simulation has even run long enough
   def MinimumDurationPassed(self, NoDomains = 1):
