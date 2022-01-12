@@ -205,6 +205,7 @@ class solution:
     MaskedData = self.SplitDataRight1D(data1D, ymin)
     # find highest peaks
     PeakIndices, properties = self.FindPeaks1D(MaskedData, **kwargs)
+    # filter out peaks that are not prominent enough
     # prominence may not be intuitive for people who think of peaks as superpositions of
     # peaks. For a found peak: the nearest minima on the left and right are the bases. 
     # however for the calculation of the prominence the higher one of the two is chosen. 
