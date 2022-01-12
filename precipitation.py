@@ -610,9 +610,10 @@ class PrecipitiSimu(Simulation):
     if(not self.MinimumDurationPassed(NoDomains)):
       self.SolutionType = 'TooShort'
       return False
+    tminIndex = self.tminIndex(NoDomains)
     # self.CheckIfStationary()
     # main algorithm. loop through each timestep to find the peaks and measure their properties
-    for sol in self.sols:
+    for sol in self.sols[tminIndex:]:
       # print(sol.imagenumber)
       # look for peaks (by looking for minima)
       try:
@@ -643,15 +644,30 @@ class PrecipitiSimu(Simulation):
     # calculate Simulation measures after individual peaks have been analyzed
     self.Measures.SetFinalMeasures()
     return True
+  def set_OutputDT(self):
+    tend = self.t[-1]
+    tstart = self.t[0]
+    Deltat = tend - tstart
+    self.OutputDT = Deltat/(len(self.t) - 1)
+  def tminIndex(self, NoDomains):
+    if(not hasattr(self, 'OutputDT')):
+      self.set_OutputDT()
+    if(not hasattr(self, 'tmin')):
+      self.set_MinimumDuration(NoDomains)
+    index = int(self.tmin/self.OutputDT)
+    return index
   # Check if the simulation has even run long enough
   def MinimumDurationPassed(self, NoDomains = 1):
-    tmin = self.params['Ly']/self.params['v']*NoDomains
-    if(self.t[-1]>tmin):
+    if(not hasattr(self, 'tmin')):
+      self.set_MinimumDuration(NoDomains)
+    if(self.t[-1]>self.tmin):
       return True
     else:
       print('Simulation is too short:')
       print(str(self.path))
       return False
+  def set_MinimumDuration(self, NoDomains = 1):
+    self.tmin = self.params['Ly']/self.params['v']*NoDomains
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
   def HasRidge(self, n = 100, **kwargs):
     try:
