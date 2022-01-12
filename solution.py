@@ -196,37 +196,29 @@ class solution:
   # Arrays are masked once to cut down the domain
   # then indices/peaks that do not correspond to high enough prominence are filtered out 
   # Note that index values do not change only array sizes change
-  def FindHighestPeaksRight1D(self, data, FractionOfMaximumProminence = None, ymin = None, **kwargs):
+  def FindHighestPeaksRight1D(self, data, FractionOfMaximumProminence = None, RelativeMeasurePt = 0.9, RelativeYMin = 0.3, **kwargs):
     # does nothing if Field is already 1D
     data1D = self.get_crosssection_y(data)
-    if(ymin == None):
-      ymin = self.Ly/2
-    # mask domain according to ymin
-    MaskedData = self.SplitDataRight1D(data1D, ymin)
-    # find highest peaks
-    PeakIndices, properties = self.FindPeaks1D(MaskedData, **kwargs)
-    # filter out peaks that are not prominent enough
-    # prominence may not be intuitive for people who think of peaks as superpositions of
-    # peaks. For a found peak: the nearest minima on the left and right are the bases. 
-    # however for the calculation of the prominence the higher one of the two is chosen. 
-    # get MaximumProminence, corresponding to the most significant peak
-    # using FractionOfMaximum... makes most sense with prominence rather than keyword height
-    # since one period may contain two peaks of very similar height. 
-    # since the smaller peak will have a much smaller prominence due to it neighboring the other
-    # peak, the smaller peak can be excluded by filtering out small prominences
-    ProminenceMask = self.MaskFromMaximumValue(properties, 'prominences', FractionOfMaximumProminence)
+    # Take Reference Prominence from between the left boundary and the measurepoint
+    # set the required indices for these boundaries
+    self.set_YMinIndex(RelativeYMin)
+    self.set_MPIndex(RelativeMeasurePt)
+    # find highest peaks in full domain
+    PeakIndices, properties = self.FindPeaks1D(data1D, **kwargs)
+    # get the reference prominence as stated above
+    self.GetMaximumProminenceLeft(PeakIndices, properties)
+    # exclude the peaks that have too small prominence
+    ProminenceMask = self.MaskFromValue(properties, 'prominences', self.MaxProminenceLeft, FractionOfMaximumProminence)
     self.ExcludePeaksFromProperties(properties, PeakIndices, ProminenceMask)
-    # PeakIndices are relative to the shape of data1D
+    # Update PeakIndices
     PeakIndices = PeakIndices[ProminenceMask]
     # add peak positions
-    properties["positions"] = self.Maskedy[PeakIndices]
-    # shift indices back in order to match the shape of data
-    # PeakIndices = PeakIndices + len(data) - len(MaskedData)
+    properties["positions"] = self.y[PeakIndices]
     return PeakIndices, properties
 
   # wrapper of FindHighestPeaksRight1D but reversed for minima
-  def FindSmallestMinimaRight1D(self, data, FractionOfMaximumProminence = None, ymin = None):
-    MinimaIndices, properties = self.FindHighestPeaksRight1D(-data, FractionOfMaximumProminence, height = (None, 0))
+  def FindSmallestMinimaRight1D(self, data, FractionOfMaximumProminence = None, RelativeMeasurePt = 0.9, RelativeYMin = 0.3):
+    MinimaIndices, properties = self.FindHighestPeaksRight1D(-data, FractionOfMaximumProminence, RelativeMeasurePt, RelativeYMin, height = (None, 0))
     return MinimaIndices, properties
 
   # wrapper for scipy's find_peaks
@@ -252,13 +244,28 @@ class solution:
   #   MinimaIndices, properties = find_peaks(-data1D, height = (None, 0), prominence = 0)
   #   return MinimaIndices, properties
 
+
+  # 
+  def GetMaximumProminenceLeft(self, PeakIndices, properties, CutLeft = True):
+    mask = (PeakIndices<=self.MPIndex)
+    if(CutLeft):
+      mask = mask & (PeakIndices>self.YMinIndex)
+    self.MaxProminenceLeft = np.max(properties['prominences'][mask])
+
+  def set_YMinIndex(self, RelativeYMin):
+    self.YMinIndex = int(self.Ny*RelativeYMin)
+  # set index of measurepoint (round down if float)
+  def set_MPIndex(self, RelativeMeasurePt = 0.9):
+    # domain size Ly maps exactly to Ny. Grid points only go to index Ny-1 and thus domain
+    # Ly-dx but that doesnt change the mapping
+    self.MPIndex = int(self.Ny*RelativeMeasurePt)
   # get indices where >ymin
   def SplitDomainRightIndices1D(self, ymin= None):
     if(ymin == None):
       ymin = self.Ly/2
     # relevant indices after splitting the domain
-    self.SplitDomainIndices = self.y>ymin
-    self.Maskedy = self.y[self.SplitDomainIndices]
+    self.SplitDomainMask = self.y>ymin
+    self.Maskedy = self.y[self.SplitDomainMask]
   # get values where >ymin
   def SplitDataRight1D(self, data, ymin=None):
     if(ymin == None):
@@ -266,15 +273,8 @@ class solution:
     self.SplitDomainRightIndices1D(ymin)
     return data[self.SplitDomainIndices]
   # create mask that only takes the values of key that are above maximum*fraction
-  def MaskFromMaximumValue(self, properties, key, fraction):
-    maximum = np.max(properties[key])
-    return properties[key]>(maximum*fraction)
-  # def MaskFromMaximumValue(self, properties, key, fraction):
-  #   if(len(properties[key])) == 0:
-  #     return None
-  #   else:
-  #     maximum = np.max(properties[key])
-  #     return properties[key]>(maximum*fraction)
+  def MaskFromValue(self, properties, key, value, fraction):
+    return properties[key]>(value*fraction)
   # take each property and mask each array
   # for my purpose it would have been better if scipy.find_peaks returned an array
   # of peak objects so that each property value is tied to each peak

@@ -448,7 +448,7 @@ class precipiti(solution):
     self.zeta1DProps.PeakIndices = PeakIndices
     self.zeta1DProps.properties = properties
     # shift index to match shape of full domain
-    self.ShiftIndices(self.zeta1DProps, 'PeakIndices')
+    # self.ShiftIndices(self.zeta1DProps, 'PeakIndices')
 
   def FindSmallestMinimaZetaPeaksRight1D(self, *args, **kwargs):
     # make sure data is 1D
@@ -461,7 +461,7 @@ class precipiti(solution):
     self.zeta1DProps.MinimaIndices = MinimaIndices
     self.zeta1DProps.properties = properties
     # shift index to match shape of full domain
-    self.ShiftIndices(self.zeta1DProps, 'MinimaIndices')
+    # self.ShiftIndices(self.zeta1DProps, 'MinimaIndices')
 
   # PeakIndices and MinimaIndices have different names, therefore need to use get/setattr
   def ShiftIndices(self, FieldProps, IndicesStr):
