@@ -608,7 +608,7 @@ class PrecipitiSimu(Simulation):
     ClosestPeakPositionOld = 0
     # return if calculated not long enough
     if(not self.MinimumDurationPassed(NoDomains)):
-      self.SolutionType = 'TooShort'
+      print('TooShort')
       return False
     tminIndex = self.tminIndex(NoDomains)
     # self.CheckIfStationary()
@@ -668,8 +668,14 @@ class PrecipitiSimu(Simulation):
       return False
   def set_MinimumDuration(self, NoDomains = 1):
     self.tmin = self.params['Ly']/self.params['v']*NoDomains
+
+  def CharacterizeSolution(self, n = 200, eps = 1e-10, **kwargs):
+    self.set_Stationary(n, eps)
+    self.set_HasRidge(n, **kwargs)
+    self.set_Deposit(n)
+
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
-  def HasRidge(self, n = 100, **kwargs):
+  def set_HasRidge(self, n = 200, **kwargs):
     try:
       # loop through solutions
       for sol in self.sols[-n:]:
@@ -680,9 +686,21 @@ class PrecipitiSimu(Simulation):
         PeakIndices, properties = self.FindPeaks1D(data1D, **kwargs)
         self.h1DProps.MaximaIndices = PeakIndices
         self.h1DProps.properties = properties
-      return True
+      self.HasRidge = True
     except ErrorNoExtrema:
-      return False
+      self.HasRidge = False
+  def set_Deposit(self, n = 200):
+    for sol in self.sols[-n:]:
+      phi1D = sol.get_crosssection_y(sol.phi)
+      SolidPhase = phi1D < 0
+      if(any(SolidPhase)):
+        self.Deposit = True
+        break
+      else:
+        self.Deposit = False
+
+
+
 
 
   # expected equilibrium precursor height, depending on Ups, Mu, Chi and initial concentration c
