@@ -676,19 +676,20 @@ class PrecipitiSimu(Simulation):
 
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
   def set_HasRidge(self, n = 200, **kwargs):
-    try:
-      # loop through solutions
-      for sol in self.sols[-n:]:
-        data1D = sol.get_crosssection_y(sol.h)
-        # allocate data to Field object
-        if(not hasattr(self, 'h1DProps')):
-          self.set_FieldProps(data1D, 'h1D')
-        PeakIndices, properties = self.FindPeaks1D(data1D, **kwargs)
-        self.h1DProps.MaximaIndices = PeakIndices
-        self.h1DProps.properties = properties
-      self.HasRidge = True
-    except ErrorNoExtrema:
-      self.HasRidge = False
+    self.HasRidge = False
+    # loop through solutions
+    for sol in self.sols[-n:]:
+      data1D = sol.get_crosssection_y(sol.h)
+      # allocate data to Field object
+      if(not hasattr(self, 'h1DProps')):
+        sol.set_FieldProps(data1D, 'h1D')
+      PeakIndices, properties = sol.FindPeaks1D(data1D, **kwargs)
+      sol.h1DProps.MaximaIndices = PeakIndices
+      sol.h1DProps.properties = properties
+      if(len(PeakIndices)>0):
+        self.HasRidge = True
+        break
+
   def set_Deposit(self, n = 200):
     for sol in self.sols[-n:]:
       phi1D = sol.get_crosssection_y(sol.phi)
