@@ -671,12 +671,12 @@ class PrecipitiSimu(Simulation):
 
   def CharacterizeSolution(self, n = 200, eps = 1e-10, **kwargs):
     self.set_Stationary(n, eps)
-    self.set_HasRidge(n, **kwargs)
+    self.set_Ridge(n, **kwargs)
     self.set_Deposit(n)
 
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
-  def set_HasRidge(self, n = 200, **kwargs):
-    self.HasRidge = False
+  def set_Ridge(self, n = 200, **kwargs):
+    self.Ridge = False
     # loop through solutions
     for sol in self.sols[-n:]:
       data1D = sol.get_crosssection_y(sol.h)
@@ -687,7 +687,7 @@ class PrecipitiSimu(Simulation):
       sol.h1DProps.MaximaIndices = PeakIndices
       sol.h1DProps.properties = properties
       if(len(PeakIndices)>0):
-        self.HasRidge = True
+        self.Ridge = True
         break
 
   def set_Deposit(self, n = 200):
