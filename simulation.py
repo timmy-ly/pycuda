@@ -2,6 +2,8 @@ import numpy as np
 from solution import solution
 from pathlib import Path,PurePath
 import cuda
+import time
+from memory_profiler import profile
 
 # default values
 attribute = 'imagenumber'
@@ -85,11 +87,12 @@ class Simulation:
     self.Filepaths = list(self.path.glob(pattern))
     self.NumberOfFilepaths = len(self.Filepaths)
   # get solution objects of all frames
+  # @profile()
   def set_solutions(self, pattern = None):
     if(pattern is None):
       pattern = self.pattern
     self.set_filepaths(pattern = pattern)
-    self.sols = [self.objectclass(self.Filepaths[i]) for i in range(self.NumberOfFilepaths)]
+    self.sols = [self.objectclass(Filepath) for Filepath in self.Filepaths]
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
     ObjectClass = self.objectclass
