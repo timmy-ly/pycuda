@@ -205,6 +205,8 @@ class solution:
     self.set_MPIndex(RelativeMeasurePt)
     # find highest peaks in full domain
     PeakIndices, properties = self.FindPeaks1D(data1D, **kwargs)
+    if(len(PeakIndices)==0):
+      raise ErrorNoExtrema('Could not find extrema or missing left boundary of the peak')
     # get the reference prominence as stated above
     self.GetMaximumProminenceLeft(PeakIndices, properties)
     # exclude the peaks that have too small prominence
@@ -231,8 +233,8 @@ class solution:
     # PeakIndices are relative to the shape of data1D
     # see FindMinima1D for minima algorithm
     PeakIndices, properties = find_peaks(data1D, height = height, prominence = prominence)
-    if(len(PeakIndices)==0):
-      raise ErrorNoExtrema('Could not find extrema or missing left boundary of the peak')
+    # if(len(PeakIndices)==0):
+      # raise ErrorNoExtrema('Could not find extrema or missing left boundary of the peak')
     return PeakIndices, properties
   # # wrapper for scipy's find_peaks
   # def FindMinima1D(self, data):
