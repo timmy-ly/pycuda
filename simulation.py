@@ -92,7 +92,10 @@ class Simulation:
     if(pattern is None):
       pattern = self.pattern
     self.set_filepaths(pattern = pattern)
-    self.sols = [self.objectclass(Filepath) for Filepath in self.Filepaths]
+    Filepaths = self.Filepaths
+    objectclass = self.objectclass
+    self.sols = [objectclass(Filepath) for Filepath in Filepaths]
+    # self.sols = map(objectclass, Filepaths)
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
     ObjectClass = self.objectclass
