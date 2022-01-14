@@ -132,23 +132,11 @@ class solution:
       self.dim = 2
 
   # 2d arrays of y and x
-  def set_coordinates(self, Lx=None, Ly=None, Nx=None, Ny=None):
-    if Lx is not None:
-      Lx = Lx
-    else:
-      Lx = self.Lx
-    if Nx is not None:
-      Nx = Nx
-    else:
-      Nx = self.Nx
-    if Ly is not None:
-      Ly = Ly
-    else:
-      Ly = self.Ly
-    if Ny is not None:
-      Ny = Ny
-    else:
-      Ny = self.Ny
+  def set_coordinates(self):
+    Nx = self.Nx
+    Ny = self.Ny
+    Lx = self.Lx
+    Ly = self.Ly
     self.y2D, self.x2D = np.meshgrid(np.arange(Ny)*Ly/Ny, np.arange(Nx)*Lx/Nx)
     # careful since this overwrites self.y from set_coordinates
   def set_SpatialGrid1Dy(self):
