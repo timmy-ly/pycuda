@@ -78,6 +78,15 @@ def DefaultParams(object):
   object.noise = 0.0
   object.h1 = 0.0
 
+def convert(val):
+  constructors = [int, float, str]
+  for c in constructors:
+    try:
+      return c(val)
+    except ValueError:
+      pass
+
+
 # methods and attributes that apply to all precipiti problems
 class precipiti(solution):
   def __init__(self, path = None):
@@ -100,8 +109,8 @@ class precipiti(solution):
         self.set_zeta()
         self.set_zeta1D()
       self.set_h()
-      self.set_dfdh()
-      self.set_disjp()
+      # self.set_dfdh()
+      # self.set_disjp()
       self.zeta1DProps = FieldProps()
       self.Measures = PrecipitiMeasures()
     else:
@@ -113,54 +122,56 @@ class precipiti(solution):
     if filepath is None:
       filepath = self.path
     filepath = str(cuda.dat(filepath))
-    # print(filepath)
     with open(filepath,'r') as f:
-      lines = f.readlines()		#list, not array
-    for i in np.arange(len(lines)):
-      if lines[i].split()[0] == 'Nx':
-        self.Nx = int(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Ny':
-        self.Ny = int(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Lx':
-        self.Lx = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Ly':
-        self.Ly = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 't':
-        self.t = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'dt':
-        self.dt = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'imagenumber':
-        self.imagenumber = int(lines[i].split()[1])
-      elif lines[i].split()[0] == 'h0':
-        self.h0 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'v':
-        self.v = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'ups0':
-        self.ups0 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'chi':
-        self.chi = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'ups1':
-        self.ups1 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'ups2':
-        self.ups2 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'ups3':
-        self.ups3 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'g':
-        self.g = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'beta':
-        self.beta = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'lamb':
-        self.lamb = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'LAMB':
-        self.LAMB = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'sigma':
-        self.sigma = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'alpha':
-        self.alpha = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'c0':
-        self.C0 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Ceq':
-        self.Ceq = float(lines[i].split()[1])
+      for line in f:
+        entries = line.split()
+        # pass
+        if len(entries)>1:
+          setattr(self, entries[0], convert(entries[1]))
+        # if entries[0] == 'Nx':
+        #   self.Nx = int(entries[1])
+        # elif entries[0] == 'Ny':
+        #   self.Ny = int(entries[1])
+        # elif entries[0] == 'Lx':
+        #   self.Lx = float(entries[1])
+        # elif entries[0] == 'Ly':
+        #   self.Ly = float(entries[1])
+        # elif entries[0] == 't':
+        #   self.t = float(entries[1])
+        # elif entries[0] == 'dt':
+        #   self.dt = float(entries[1])
+        # elif entries[0] == 'imagenumber':
+        #   self.imagenumber = int(entries[1])
+        # elif entries[0] == 'h0':
+        #   self.h0 = float(entries[1])
+        # elif entries[0] == 'v':
+        #   self.v = float(entries[1])
+        # elif entries[0] == 'ups0':
+        #   self.ups0 = float(entries[1])
+        # elif entries[0] == 'chi':
+        #   self.chi = float(entries[1])
+        # elif entries[0] == 'ups1':
+        #   self.ups1 = float(entries[1])
+        # elif entries[0] == 'ups2':
+        #   self.ups2 = float(entries[1])
+        # elif entries[0] == 'ups3':
+        #   self.ups3 = float(entries[1])
+        # elif entries[0] == 'g':
+        #   self.g = float(entries[1])
+        # elif entries[0] == 'beta':
+        #   self.beta = float(entries[1])
+        # elif entries[0] == 'lamb':
+        #   self.lamb = float(entries[1])
+        # elif entries[0] == 'LAMB':
+        #   self.LAMB = float(entries[1])
+        # elif entries[0] == 'sigma':
+        #   self.sigma = float(entries[1])
+        # elif entries[0] == 'alpha':
+        #   self.alpha = float(entries[1])
+        # elif entries[0] == 'c0':
+        #   self.C0 = float(entries[1])
+        # elif entries[0] == 'Ceq':
+        #   self.Ceq = float(entries[1])
   def set_FieldProps(self, data, FieldName):
     FieldPropsName = FieldName + 'Props'
     setattr(self, FieldPropsName, FieldProps(data, FieldName))
@@ -233,10 +244,11 @@ class precipiti(solution):
       self.set_dypsi2()
     self.dyM2 = 1.0/3.0*self.h*(self.h*self.dypsi2 + 2.0*self.psi2*self.dyh)
   def set_pressure(self):
-    if(hasattr(self, "dyyh")):
-      self.pressure = -self.dyyh + self.dfdh
-    else:
-      self.pressure = -cuda.dyy4_m22(field = self.h, dx2 = self.dx2()) + self.dfdh
+    if(not hasattr(self,"dyyh")):
+      self.set_dyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
+    self.pressure = -self.dyyh + self.dfdh
   def set_dydfdh(self):
     self.dydfdh = self.dy4_m22(self.dfdh)
   def set_mask(self):
@@ -254,6 +266,8 @@ class precipiti(solution):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.dyPressure = self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)
   def set_conv(self):
@@ -261,6 +275,8 @@ class precipiti(solution):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv = (self.h**3)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.h   
   def set_convrate(self):
@@ -270,6 +286,8 @@ class precipiti(solution):
       self.set_dyyyh()
     if(not hasattr(self,"dyyyyh")):
       self.set_dyyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
     dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
     self.set_M()
@@ -282,6 +300,8 @@ class precipiti(solution):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv1 = (self.psi1*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi1
   def set_conv1Comoving(self):
@@ -289,6 +309,8 @@ class precipiti(solution):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv1Comoving = (self.psi1*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
   def set_conv1rate(self):
@@ -298,6 +320,8 @@ class precipiti(solution):
       self.set_dyyyh()
     if(not hasattr(self,"dyyyyh")):
       self.set_dyyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
     dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
     self.set_M1()
@@ -312,6 +336,8 @@ class precipiti(solution):
       self.set_dyyyh()
     if(not hasattr(self,"dyyyyh")):
       self.set_dyyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
     dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
     self.set_M1()
@@ -324,6 +350,8 @@ class precipiti(solution):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv2 = (self.psi2*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.psi2
   def set_conv2Comoving(self):
@@ -331,6 +359,8 @@ class precipiti(solution):
       self.set_dyh()
     if(not hasattr(self,"dyyyh")):
       self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv2Comoving = (self.psi2*self.h**2)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
   def set_conv2rate(self):
@@ -340,6 +370,8 @@ class precipiti(solution):
       self.set_dyyyh()
     if(not hasattr(self,"dyyyyh")):
       self.set_dyyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
     dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
     self.set_M2()
@@ -354,6 +386,8 @@ class precipiti(solution):
       self.set_dyyyh()
     if(not hasattr(self,"dyyyyh")):
       self.set_dyyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
     dydfdh = cuda.dy4_m22(self.dfdh, self.dx())
     dyydfdh = cuda.dyy4_m22(self.dfdh, self.dx2())
     self.set_M2()
@@ -392,15 +426,15 @@ class precipiti(solution):
     else:
       self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
   def set_evap(self):
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
+    if not hasattr(self, "dyyh"):
+      self.set_dyyh()
     if(self.nof>1):
       if not hasattr(self, "osmo"):
         self.set_osmo()
-      if not hasattr(self, "dyyh"):
-        self.set_dyyh()
       self.evap = -self.ups1*(-self.dyyh + self.dfdh  + self.osmo - self.ups3)
     else:
-      if not hasattr(self, "dyyh"):
-        self.set_dyyh()
       self.evap = -self.ups1*(-self.dyyh + self.dfdh  - self.ups3)
   def set_MaskedEvap(self):
     self.CheckSetAttr("evap", "mask")
@@ -743,31 +777,31 @@ class XuMeakin(solution):
     # print(filepath)
     with open(filepath,'r') as f:
       lines = f.readlines()		#list, not array
-    for i in np.arange(len(lines)):
-      if lines[i].split()[0] == 'Nx':
-        self.Nx = int(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Ny':
-        self.Ny = int(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Lx':
-        self.Lx = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Ly':
-        self.Ly = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 't':
-        self.t = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'dt':
-        self.dt = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'imagenumber':
-        self.imagenumber = int(lines[i].split()[1])
-      elif lines[i].split()[0] == 'lamb':
-        self.lamb = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'PeXM':
-        self.PeXM = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'alpha':
-        self.alpha = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'c0':
-        self.C0 = float(lines[i].split()[1])
-      elif lines[i].split()[0] == 'Ceq':
-        self.Ceq = float(lines[i].split()[1])
+    for line in lines:
+      if line.split()[0] == 'Nx':
+        self.Nx = int(line.split()[1])
+      elif line.split()[0] == 'Ny':
+        self.Ny = int(line.split()[1])
+      elif line.split()[0] == 'Lx':
+        self.Lx = float(line.split()[1])
+      elif line.split()[0] == 'Ly':
+        self.Ly = float(line.split()[1])
+      elif line.split()[0] == 't':
+        self.t = float(line.split()[1])
+      elif line.split()[0] == 'dt':
+        self.dt = float(line.split()[1])
+      elif line.split()[0] == 'imagenumber':
+        self.imagenumber = int(line.split()[1])
+      elif line.split()[0] == 'lamb':
+        self.lamb = float(line.split()[1])
+      elif line.split()[0] == 'PeXM':
+        self.PeXM = float(line.split()[1])
+      elif line.split()[0] == 'alpha':
+        self.alpha = float(line.split()[1])
+      elif line.split()[0] == 'c0':
+        self.C0 = float(line.split()[1])
+      elif line.split()[0] == 'Ceq':
+        self.Ceq = float(line.split()[1])
 
   def set_C(self):
     self.C = self.fields[0]
