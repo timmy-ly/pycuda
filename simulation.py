@@ -3,7 +3,6 @@ from solution import solution
 from pathlib import Path,PurePath
 import cuda
 import time
-from memory_profiler import profile
 
 # default values
 attribute = 'imagenumber'
