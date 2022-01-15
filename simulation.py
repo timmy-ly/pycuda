@@ -3,7 +3,7 @@ from solution import solution
 from pathlib import Path,PurePath
 import cuda
 import time
-# import multiprocessing as mp
+import multiprocessing as mp
 
 # default values
 attribute = 'imagenumber'
@@ -94,10 +94,12 @@ class Simulation:
     self.set_filepaths(pattern = pattern)
     Filepaths = self.Filepaths
     objectclass = self.objectclass
-    self.sols = [None]*self.NumberOfFilepaths
-    # pool = mp.Pool()
-    for i in range(self.NumberOfFilepaths):
-      self.sols[i] = objectclass(Filepaths[i])
+    # self.sols = [None]*self.NumberOfFilepaths
+    pool = mp.Pool()
+    self.sols = pool.map(objectclass, Filepaths)
+    pool.close()
+    # for i in range(self.NumberOfFilepaths):
+      # self.sols[i] = objectclass(Filepaths[i])
     # self.sols = [objectclass(Filepath) for Filepath in Filepaths]
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
