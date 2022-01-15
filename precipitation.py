@@ -53,7 +53,8 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanPeriod = np.mean(self.Periods)
 
 def DefaultParams(object):
-  print("Applying DefaultParams")
+  if(not object.silent):
+    print("Applying DefaultParams")
   object.nof = 4
   # model
   object.v = 0.2
@@ -89,7 +90,7 @@ def convert(val):
 
 # methods and attributes that apply to all precipiti problems
 class precipiti(solution):
-  def __init__(self, path = None):
+  def __init__(self, path = None, silent = False):
     super().__init__()
     if path is not None:
       self.path = Path(path)
@@ -114,6 +115,7 @@ class precipiti(solution):
       self.zeta1DProps = FieldProps()
       self.Measures = PrecipitiMeasures()
     else:
+      self.silent = silent
       DefaultParams(self)
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
