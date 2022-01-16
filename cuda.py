@@ -48,6 +48,14 @@ def LineToDict(keys, line):
 
 # todo: maybe sort the dictionary?
 # method to manually trigger update
+
+# class to collect phase data from multiple simulations
+# the determination of the phase is done elsewhere
+# PhaseDataName: storage file for the phase data
+# FilePattern: pattern of the parameter files of the solution frames
+# ParameterStrs: strings of the parameters that span the parameter space
+# AdditionalColumns: Other relevant quantities per parameter set (such as 
+# phasetype)
 class PhaseData:
   def __init__(self, ParameterStrs, AdditionalColumns, SaveName = 'PhaseDiagram'):
     self.PhaseDataName = Path(PurePath(SaveName + '.dat'))
@@ -79,20 +87,26 @@ class PhaseData:
       for DataPoint in self.DataPoints.values():
         InnerValues = [str(InnerValue) for InnerValue in DataPoint.values()]
         f.write(" ".join(InnerValues) + "\n")
-      
+
+  # check if DataPaths contains simulations that are not present in PhaseDataName.dat
+  # also check if existing entries have less frames
   def FilterDataToUpdate(self, DataPaths):
     self.DataPathsToUpdate = []
+    # loop through the provided simulation paths
     for DataPath in DataPaths:
+      # get parameter sets from one of the frames
       Parameters = self.GetParametersFromSol(DataPath)
-      key = (Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
-      if(key not in self.DataPoints):
+      # get the relevant parameter values as outerkeys
+      outerkey = (Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
+      if(outerkey not in self.DataPoints):
         self.DataPathsToUpdate.append(DataPath)
-      elif(self.DataPoints[key]['n']<Parameters['n']):
+      elif(self.DataPoints[outerkey]['n']<Parameters['n']):
         self.DataPathsToUpdate.append(DataPath)
   # 
   def GetOuterkeys(self, DataPoint):
     return (DataPoint[ParameterStr] for ParameterStr in self.ParameterStrs)
 
+  # update DataPoints
   def AddUpdateDataToDict(self, DataPoint):
     outerkeys = self.GetOuterkeys(DataPoint)
     self.DataPoints[outerkeys] = DataPoint
