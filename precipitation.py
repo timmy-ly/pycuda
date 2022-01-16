@@ -4,6 +4,7 @@ import cuda
 from simulation import Simulation, SimulMeasures
 from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
+attribute = 'imagenumber'
 class ErrorOnlyOneMinimum(Exception):
   pass
 class ErrorSimulatedTooShort(Exception):
@@ -130,50 +131,7 @@ class precipiti(solution):
         # pass
         if len(entries)>1:
           setattr(self, entries[0], convert(entries[1]))
-        # if entries[0] == 'Nx':
-        #   self.Nx = int(entries[1])
-        # elif entries[0] == 'Ny':
-        #   self.Ny = int(entries[1])
-        # elif entries[0] == 'Lx':
-        #   self.Lx = float(entries[1])
-        # elif entries[0] == 'Ly':
-        #   self.Ly = float(entries[1])
-        # elif entries[0] == 't':
-        #   self.t = float(entries[1])
-        # elif entries[0] == 'dt':
-        #   self.dt = float(entries[1])
-        # elif entries[0] == 'imagenumber':
-        #   self.imagenumber = int(entries[1])
-        # elif entries[0] == 'h0':
-        #   self.h0 = float(entries[1])
-        # elif entries[0] == 'v':
-        #   self.v = float(entries[1])
-        # elif entries[0] == 'ups0':
-        #   self.ups0 = float(entries[1])
-        # elif entries[0] == 'chi':
-        #   self.chi = float(entries[1])
-        # elif entries[0] == 'ups1':
-        #   self.ups1 = float(entries[1])
-        # elif entries[0] == 'ups2':
-        #   self.ups2 = float(entries[1])
-        # elif entries[0] == 'ups3':
-        #   self.ups3 = float(entries[1])
-        # elif entries[0] == 'g':
-        #   self.g = float(entries[1])
-        # elif entries[0] == 'beta':
-        #   self.beta = float(entries[1])
-        # elif entries[0] == 'lamb':
-        #   self.lamb = float(entries[1])
-        # elif entries[0] == 'LAMB':
-        #   self.LAMB = float(entries[1])
-        # elif entries[0] == 'sigma':
-        #   self.sigma = float(entries[1])
-        # elif entries[0] == 'alpha':
-        #   self.alpha = float(entries[1])
-        # elif entries[0] == 'c0':
-        #   self.C0 = float(entries[1])
-        # elif entries[0] == 'Ceq':
-        #   self.Ceq = float(entries[1])
+
   def set_FieldProps(self, data, FieldName):
     FieldPropsName = FieldName + 'Props'
     setattr(self, FieldPropsName, FieldProps(data, FieldName))
@@ -622,8 +580,12 @@ class precipiti(solution):
   
   
 class PrecipitiSimu(Simulation):
-  def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', objectclass = precipiti):
-    super().__init__(path, start = start, end = end, file = file, objectclass = objectclass)
+  def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', 
+              objectclass = precipiti, attribute = attribute):
+              # objectclass = precipiti, attribute = attribute, nCPU = 1):
+    super().__init__(path, start = start, end = end, file = file, 
+                    objectclass = objectclass, attribute = attribute)
+                    # objectclass = objectclass, attribute = attribute, nCPU = nCPU)
     self.Measures = PrecipitiSimulMeasures()
 
   # Calculate the simulation measures, mainly for periodic solutions
