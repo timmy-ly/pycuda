@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.signal import find_peaks
-
+import cuda
+from cuda import convert
 class ErrorNoExtrema(Exception):
   pass
 
@@ -53,6 +54,17 @@ class solution:
     # dummy field, used when using finite difference methods on fields outside of
     # class object
     self.DummyFields = None
+
+  def readparams(self, filepath=None):
+    if filepath is None:
+      filepath = self.path
+    filepath = str(cuda.dat(filepath))
+    with open(filepath,'r') as f:
+      for line in f:
+        entries = line.split()
+        # pass
+        if len(entries)>1:
+          setattr(self, entries[0], convert(entries[1]))
       
   @property
   def dtype(self):

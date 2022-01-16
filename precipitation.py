@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 import cuda
-from cuda import convert
 from simulation import Simulation, SimulMeasures
 from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
@@ -113,17 +112,6 @@ class precipiti(solution):
       DefaultParams(self)
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
-
-  def readparams(self, filepath=None):
-    if filepath is None:
-      filepath = self.path
-    filepath = str(cuda.dat(filepath))
-    with open(filepath,'r') as f:
-      for line in f:
-        entries = line.split()
-        # pass
-        if len(entries)>1:
-          setattr(self, entries[0], convert(entries[1]))
 
   def set_FieldProps(self, data, FieldName):
     FieldPropsName = FieldName + 'Props'
@@ -727,38 +715,38 @@ class XuMeakin(solution):
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
 
-  def readparams(self, filepath=None):
-    if filepath is None:
-      filepath = self.path
-    filepath = str(cuda.dat(filepath))
-    # print(filepath)
-    with open(filepath,'r') as f:
-      lines = f.readlines()		#list, not array
-    for line in lines:
-      if line.split()[0] == 'Nx':
-        self.Nx = int(line.split()[1])
-      elif line.split()[0] == 'Ny':
-        self.Ny = int(line.split()[1])
-      elif line.split()[0] == 'Lx':
-        self.Lx = float(line.split()[1])
-      elif line.split()[0] == 'Ly':
-        self.Ly = float(line.split()[1])
-      elif line.split()[0] == 't':
-        self.t = float(line.split()[1])
-      elif line.split()[0] == 'dt':
-        self.dt = float(line.split()[1])
-      elif line.split()[0] == 'imagenumber':
-        self.imagenumber = int(line.split()[1])
-      elif line.split()[0] == 'lamb':
-        self.lamb = float(line.split()[1])
-      elif line.split()[0] == 'PeXM':
-        self.PeXM = float(line.split()[1])
-      elif line.split()[0] == 'alpha':
-        self.alpha = float(line.split()[1])
-      elif line.split()[0] == 'c0':
-        self.C0 = float(line.split()[1])
-      elif line.split()[0] == 'Ceq':
-        self.Ceq = float(line.split()[1])
+  # def readparams(self, filepath=None):
+  #   if filepath is None:
+  #     filepath = self.path
+  #   filepath = str(cuda.dat(filepath))
+  #   # print(filepath)
+  #   with open(filepath,'r') as f:
+  #     lines = f.readlines()		#list, not array
+  #   for line in lines:
+  #     if line.split()[0] == 'Nx':
+  #       self.Nx = int(line.split()[1])
+  #     elif line.split()[0] == 'Ny':
+  #       self.Ny = int(line.split()[1])
+  #     elif line.split()[0] == 'Lx':
+  #       self.Lx = float(line.split()[1])
+  #     elif line.split()[0] == 'Ly':
+  #       self.Ly = float(line.split()[1])
+  #     elif line.split()[0] == 't':
+  #       self.t = float(line.split()[1])
+  #     elif line.split()[0] == 'dt':
+  #       self.dt = float(line.split()[1])
+  #     elif line.split()[0] == 'imagenumber':
+  #       self.imagenumber = int(line.split()[1])
+  #     elif line.split()[0] == 'lamb':
+  #       self.lamb = float(line.split()[1])
+  #     elif line.split()[0] == 'PeXM':
+  #       self.PeXM = float(line.split()[1])
+  #     elif line.split()[0] == 'alpha':
+  #       self.alpha = float(line.split()[1])
+  #     elif line.split()[0] == 'c0':
+  #       self.C0 = float(line.split()[1])
+  #     elif line.split()[0] == 'Ceq':
+  #       self.Ceq = float(line.split()[1])
 
   def set_C(self):
     self.C = self.fields[0]
