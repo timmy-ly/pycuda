@@ -73,10 +73,11 @@ class PhaseData:
       if(self.PhaseDataName.exists()):
         with open(self.PhaseDataName, 'r') as f:
           firstline = f.readline()
-          print(firstline)
+          # parser is on next line
+          # print(firstline)
           innerkeys = firstline.split()
           for line in f:
-            print(line)
+            # print(line)
             DataPoint = LineToDict(innerkeys, line)
             outerkeys = self.GetOuterkeys(DataPoint)
             self.DataPoints[outerkeys] = DataPoint
