@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path
 import cuda
+from cuda import convert
 from simulation import Simulation, SimulMeasures
 from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
@@ -79,14 +80,6 @@ def DefaultParams(object):
   # IC
   object.noise = 0.0
   object.h1 = 0.0
-
-def convert(val):
-  constructors = [int, float, str]
-  for c in constructors:
-    try:
-      return c(val)
-    except ValueError:
-      pass
 
 
 # methods and attributes that apply to all precipiti problems

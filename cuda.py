@@ -32,6 +32,14 @@ def dat(filepath):
 def bin(filepath):
   return filepath.with_suffix('.bin')
 
+def convert(val):
+  constructors = [int, float, str]
+  for c in constructors:
+    try:
+      return c(val)
+    except ValueError:
+      pass
+
 #Error of numerical dissipation
 # @staticmethod
 def E_diss(array_true, array_fd):

@@ -2,19 +2,12 @@ import numpy as np
 from solution import solution
 from pathlib import Path,PurePath
 import cuda
+from cuda import convert
 import time
 # import multiprocessing as mp
 
 # default values
 attribute = 'imagenumber'
-def convert(val):
-  constructors = [int, float, str]
-  for c in constructors:
-    try:
-      return c(val)
-    except ValueError:
-      pass
-
 class SimulMeasures:
   def __init__(self):
     self.t = None
