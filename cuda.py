@@ -1,6 +1,6 @@
 import numpy as np
 import warnings
-# from pathlib import Path
+from pathlib import Path, PurePath
 # scipy in interpolation
 
 class Error(Exception):
@@ -39,6 +39,78 @@ def convert(val):
       return c(val)
     except ValueError:
       pass
+
+
+# turn line in file into dictionary
+def LineToDict(keys, line):
+  vals = [convert(val) for val in line.split()]
+  return dict(zip(keys, vals))
+
+# todo: maybe sort the dictionary?
+# method to manually trigger update
+class PhaseData:
+  def __init__(self, ParameterStrs, AdditionalColumns, SaveName = 'PhaseDiagram'):
+    self.PhaseDataName = Path(PurePath(SaveName + '.dat'))
+    self.FilePattern = 'frame_[0-9]*dat'
+    self.ParameterStrs = ParameterStrs
+    self.AdditionalColumns = AdditionalColumns
+    self.ReadCreatePhaseDiagramDict()
+    
+  def ReadCreatePhaseDiagramDict(self):
+      # DataPoints is a dictionary of dictionaries
+      # the outerkeys are parametervalues corresponding to ParameterStrs
+      # the inner dictionaries contain ParameterStr:ParameterValue entries as well
+      # as more entries characterizing each Datapoint
+      self.DataPoints = {}
+      if(self.PhaseDataName.exists()):
+        with open(self.PhaseDataName, 'r') as f:
+          firstline = f.readline()
+          print(firstline)
+          innerkeys = firstline.split()
+          for line in f:
+            print(line)
+            DataPoint = LineToDict(innerkeys, line)
+            outerkeys = self.GetOuterkeys(DataPoint)
+            self.DataPoints[outerkeys] = DataPoint
+
+  def WriteToFile(self):
+    with open(self.PhaseDataName, 'w') as f:
+      f.write(" ".join(self.ParameterStrs + self.AdditionalColumns) + "\n")
+      for DataPoint in self.DataPoints.values():
+        InnerValues = [str(InnerValue) for InnerValue in DataPoint.values()]
+        f.write(" ".join(InnerValues) + "\n")
+      
+  def FilterDataToUpdate(self, DataPaths):
+    self.DataPathsToUpdate = []
+    for DataPath in DataPaths:
+      Parameters = self.GetParametersFromSol(DataPath)
+      key = (Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
+      if(key not in self.DataPoints):
+        self.DataPathsToUpdate.append(DataPath)
+      elif(self.DataPoints[key]['n']<Parameters['n']):
+        self.DataPathsToUpdate.append(DataPath)
+  # 
+  def GetOuterkeys(self, DataPoint):
+    return (DataPoint[ParameterStr] for ParameterStr in self.ParameterStrs)
+
+  def AddUpdateDataToDict(self, DataPoint):
+    outerkeys = self.GetOuterkeys(DataPoint)
+    self.DataPoints[outerkeys] = DataPoint
+
+  # get parameters from cuda parameter file as a dictionary with an additional entry
+  # that represents the number of .dat files according to self.FilePattern
+  def GetParametersFromSol(self, Path, FileName = 'frame_0001.dat'):
+    Parameters = {}
+    with open(Path / FileName) as f:
+      for line in f:
+        entries = line.split()
+        if len(entries)>1:
+          Parameters[entries[0]] = convert(entries[1])
+    n = len(list(Path.glob(self.FilePattern)))
+    Parameters['n'] = n
+    return Parameters
+
+
 
 #Error of numerical dissipation
 # @staticmethod
