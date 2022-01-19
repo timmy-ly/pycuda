@@ -16,7 +16,9 @@ class SimulMeasures:
     data = getattr(self, MeasureAttribute)
     if(i+Windowlength > len(data)):
       raise IndexWindowError('windowlength too big or index i too large/small')
-    return data[i:i+Windowlength]
+    WindowData = data[i:i+Windowlength]
+    # return WindowData/np.max(np.abs(WindowData))
+    return WindowData
   # calculate autocorrelation between sections/windows of MeasureAttribute
   def Autocorrelation(self, MeasureAttribute, i0 = None, Windowlength = 20):
     if (i0 == None):
@@ -24,13 +26,18 @@ class SimulMeasures:
     # referencewindow
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     return [np.sum(self.window(i, MeasureAttribute, Windowlength)*ReferenceWindow) for i in range(i0)]
-  def NormDistribution(self, MeasureAttribute, i0 = None, Windowlength = 20):
+  def WindowSimilarityDistribution(self, MeasureAttribute, Threshold = 1e-3, i0 = None, Windowlength = 20):
     if (i0 == None):
       i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
-    Window1 = self.window(i0, MeasureAttribute, Windowlength)
-    return [self.Norm(Window1, self.window(i, MeasureAttribute, Windowlength)) for i in range(i0)]
-  def Norm(self, Window1, Window2):
-    return (Window1-Window2)/len(Window1)
+    ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
+    distribution = np.array([self.WindowSimilarity(ReferenceWindow, self.window(i, MeasureAttribute, Windowlength)) for i in range(i0)])
+    self.FindEndOfTransient(distribution, Threshold)
+    return distribution
+  def WindowSimilarity(self, Window1, Window2):
+    return np.max(np.abs((Window1-Window2))/len(Window1))
+  def FindEndOfTransient(self, distribution, Threshold = 1e-3):
+    self.EndOfTransient = np.argmax(distribution < Threshold)
+    # print(self.EndOfTransient)
 
 
 # class for calculated field of a simulation, usually contains meta data and norms of the field values over a simulation
