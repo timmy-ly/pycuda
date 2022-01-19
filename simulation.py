@@ -2,7 +2,7 @@ import numpy as np
 from solution import solution
 from pathlib import Path,PurePath
 import cuda
-from cuda import convert
+from cuda import convert, IndexWindowError
 import time
 # import multiprocessing as mp
 
@@ -11,6 +11,19 @@ attribute = 'imagenumber'
 class SimulMeasures:
   def __init__(self):
     self.t = None
+  def window(self, i, MeasureAttribute, Windowlength = 20):
+    data = getattr(self, MeasureAttribute)
+    if(i+Windowlength > len(data)):
+      raise IndexWindowError('windowlength too big or index i too large/small')
+    return data[i:i+Windowlength]
+  # calculate autocorrelation between sections/windows of MeasureAttribute
+  def Autocorrelation(self, MeasureAttribute, i0 = None, Windowlength = 20):
+    if (i0 == None):
+      i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
+    # referencewindow
+    ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
+    return [np.sum(self.window(i, MeasureAttribute, Windowlength)*ReferenceWindow) for i in range(i0)]
+
 
 # class for calculated field of a simulation, usually contains meta data and norms of the field values over a simulation
 class FieldsMetaAndNorm:
