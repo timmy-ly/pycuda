@@ -31,11 +31,15 @@ class SimulMeasures:
       i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     distribution = np.array([self.WindowSimilarity(ReferenceWindow, self.window(i, MeasureAttribute, Windowlength)) for i in range(i0)])
+    # return the first index of distrubtion whose element is below threshold
+    # aka: the first shifted window that overlaps with the window beginning at i0 (default: last window) by less than Threshold
+    # this holds even for n-period cases since one of 1...n will coincide with the ReferenceWindow
     self.FindEndOfTransient(distribution, Threshold)
     return distribution
   def WindowSimilarity(self, Window1, Window2):
     return np.max(np.abs((Window1-Window2))/len(Window1))
   def FindEndOfTransient(self, distribution, Threshold = 1e-3):
+    # return the first index of distrubtion whose element is below threshold
     self.EndOfTransient = np.argmax(distribution < Threshold)
     # print(self.EndOfTransient)
 
