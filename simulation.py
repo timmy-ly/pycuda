@@ -12,6 +12,7 @@ class SimulMeasures:
   def __init__(self):
     self.t = None
   def window(self, i, MeasureAttribute, Windowlength = 20):
+    # data = getattr(self, MeasureAttribute) - getattr(self, 'Mean' + MeasureAttribute)
     data = getattr(self, MeasureAttribute)
     if(i+Windowlength > len(data)):
       raise IndexWindowError('windowlength too big or index i too large/small')
@@ -23,6 +24,13 @@ class SimulMeasures:
     # referencewindow
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     return [np.sum(self.window(i, MeasureAttribute, Windowlength)*ReferenceWindow) for i in range(i0)]
+  def NormDistribution(self, MeasureAttribute, i0 = None, Windowlength = 20):
+    if (i0 == None):
+      i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
+    Window1 = self.window(i0, MeasureAttribute, Windowlength)
+    return [self.Norm(Window1, self.window(i, MeasureAttribute, Windowlength)) for i in range(i0)]
+  def Norm(self, Window1, Window2):
+    return (Window1-Window2)/len(Window1)
 
 
 # class for calculated field of a simulation, usually contains meta data and norms of the field values over a simulation
