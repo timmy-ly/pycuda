@@ -26,21 +26,32 @@ class SimulMeasures:
     # referencewindow
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     return [np.sum(self.window(i, MeasureAttribute, Windowlength)*ReferenceWindow) for i in range(i0)]
+  def FindEndOfTransient(self, *args, Threshold = 1e-3, **kwargs):
+    distribution = self.WindowSimilarityDistribution(*args, **kwargs)
+    # return the first index of distrubtion whose element is below threshold
+    # aka: the first shifted window that overlaps with the window beginning at i0 (default: last window) by less than Threshold
+    # this holds even for n-period cases since one of 1...n will coincide with the ReferenceWindow
+    self.set_EndOfTransient(distribution, Threshold)
+    return distribution
+
   def WindowSimilarityDistribution(self, MeasureAttribute, Threshold = 1e-3, i0 = None, Windowlength = 20):
     if (i0 == None):
       i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     distribution = np.array([self.WindowSimilarity(ReferenceWindow, self.window(i, MeasureAttribute, Windowlength)) for i in range(i0)])
-    # return the first index of distrubtion whose element is below threshold
-    # aka: the first shifted window that overlaps with the window beginning at i0 (default: last window) by less than Threshold
-    # this holds even for n-period cases since one of 1...n will coincide with the ReferenceWindow
-    self.FindEndOfTransient(distribution, Threshold)
     return distribution
+    
   def WindowSimilarity(self, Window1, Window2):
     return np.max(np.abs((Window1-Window2))/len(Window1))
-  def FindEndOfTransient(self, distribution, Threshold = 1e-3):
+
+  def set_EndOfTransient(self, distribution, Threshold = 1e-3):
     # return the first index of distrubtion whose element is below threshold
-    self.EndOfTransient = np.argmax(distribution < Threshold)
+    mask = distribution < Threshold
+    # if no element fulfills this condition
+    if(not mask.any()):
+      print('This simulation is likely still in a transient stage. ')
+    else:
+      self.EndOfTransient = np.argmax()
     # print(self.EndOfTransient)
 
 
