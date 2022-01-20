@@ -672,8 +672,16 @@ class PrecipitiSimu(Simulation):
     self.set_Stationary(n, eps)
     self.set_Ridge(n, **Ridgekwargs)
     self.set_Deposit(n)
-    if(not self.Stationary and self.Deposit):
+    if(self.Stationary):
+      self.Transient = False
+      self.Periodic = False
+    elif(self.Deposit):
       self.set_Periodic(**Periodickwargs)
+    else:
+      print('no deposit, not stationary. \
+      Probably Ridges and/or pinned/depinned foot. Could be transient')
+      self.Transient = True
+      self.Periodic = True
 
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
   def set_Ridge(self, n = 200, **kwargs):
