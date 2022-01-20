@@ -594,7 +594,7 @@ class PrecipitiSimu(Simulation):
   # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
   # should be >1
   def set_Periodic(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
-                  NoDomains = 1.2, Threshold = 1e-3, Windowlength = 20):
+                  height = (None, 0), NoDomains = 1.2, Threshold = 1e-3, Windowlength = 20):
     # Spatial coordinate a peak has to pass to be measured
     MeasurePt = RelativeMeasurePt*self.params["Ly"]
     # initialize ClosestPeakPositionOld
@@ -605,7 +605,7 @@ class PrecipitiSimu(Simulation):
       # print(sol.imagenumber)
       # look for peaks (by looking for minima)
       try:
-        sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence)
+        sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence, height = height)
       except ErrorNoExtrema:
         continue
       # continue if minimaindices has length less than 2, since then the boundaries of the peak are unknown

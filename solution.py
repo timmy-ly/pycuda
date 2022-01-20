@@ -219,8 +219,8 @@ class solution:
     return PeakIndices, properties
 
   # wrapper of FindHighestPeaksRight1D but reversed for minima
-  def FindSmallestMinimaRight1D(self, data, FractionOfMaximumProminence = None, RelativeMeasurePt = 0.9, RelativeYMin = 0.3):
-    MinimaIndices, properties = self.FindHighestPeaksRight1D(-data, FractionOfMaximumProminence, RelativeMeasurePt, RelativeYMin, height = (None, 0))
+  def FindSmallestMinimaRight1D(self, data, FractionOfMaximumProminence = None, RelativeMeasurePt = 0.9, RelativeYMin = 0.3, height = (None, 0)):
+    MinimaIndices, properties = self.FindHighestPeaksRight1D(-data, FractionOfMaximumProminence, RelativeMeasurePt, RelativeYMin, height = height)
     return MinimaIndices, properties
 
   # wrapper for scipy's find_peaks
