@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 import cuda
-from simulation import Simulation, SimulMeasures
+from simulation import Simulation, SimulMeasures, TransientError
 from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
 
 attribute = 'imagenumber'
@@ -41,17 +41,30 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.BaseThickness = np.array(self.BaseThickness)
     self.Prominence = np.array(self.Prominence)
   # calculate the periods and means
-  def SetFinalMeasures(self):
+  def set_PeriodicMeasures(self):
     self.ListsToArrays()
     # calculate Periods
     self.Periods = self.t - np.roll(self.t, 1)
     TimeWindow = self.t[-1] - self.t[0]
-    # since numpy.roll uses periodic BC, we need to drop index 0
-    self.MeanMaximumThickness = np.sum(self.Periods[1:]*self.MaximumThickness[1:])/TimeWindow
-    self.MeanBaseThickness = np.sum(self.Periods[1:]*self.BaseThickness[1:])/TimeWindow
-    self.MeanProminence = np.sum(self.Periods[1:]*self.Prominence[1:])/TimeWindow
+    # since numpy.roll uses periodic BC, we need to drop index 0 on the periods
+    # to maintain shape we have to do this for the other quantities too
     self.Periods = self.Periods[1:]
+    self.MaximumThickness = self.MaximumThickness[1:]
+    self.BaseThickness = self.BaseThickness[1:]
+    self.Prominence = self.Prominence[1:]
+    self.MeanMaximumThickness = np.sum(self.Periods*self.MaximumThickness)/TimeWindow
+    self.MeanBaseThickness = np.sum(self.Periods*self.BaseThickness)/TimeWindow
+    self.MeanProminence = np.sum(self.Periods*self.Prominence)/TimeWindow
     self.MeanPeriod = np.mean(self.Periods)
+  def CutOffTransient(self):
+    if(not hasattr(self, 'EndOfTransient')):
+      raise TransientError('EndOfTransient attribute does not exist. Try calling FindEndOfTransient') 
+    n = self.EndOfTransient
+    self.Periods = self.Periods[n:]
+    self.MaximumThickness = self.MaximumThickness[n:]
+    self.BaseThickness = self.BaseThickness[n:]
+    self.Prominence = self.Prominence[n:]
+
 
 def DefaultParams(object):
   if(not object.silent):
@@ -580,17 +593,13 @@ class PrecipitiSimu(Simulation):
   # for drawn out material to reach the end of the domain
   # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
   # should be >1
-  def SetMeasures(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, NoDomains = 1.2):
+  def set_Periodic(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
+                  NoDomains = 1.2, Threshold = 1e-3, Windowlength = 20):
     # Spatial coordinate a peak has to pass to be measured
     MeasurePt = RelativeMeasurePt*self.params["Ly"]
     # initialize ClosestPeakPositionOld
     ClosestPeakPositionOld = 0
-    # return if calculated not long enough
-    if(not self.MinimumDurationPassed(NoDomains)):
-      print('TooShort')
-      return False
     tminIndex = self.tminIndex(NoDomains)
-    # self.CheckIfStationary()
     # main algorithm. loop through each timestep to find the peaks and measure their properties
     for sol in self.sols[tminIndex:]:
       # print(sol.imagenumber)
@@ -621,8 +630,18 @@ class PrecipitiSimu(Simulation):
         self.Measures.SaveMeasuresToLists(sol)
       ClosestPeakPositionOld = ClosestPeakPosition
     # calculate Simulation measures after individual peaks have been analyzed
-    self.Measures.SetFinalMeasures()
-    return True
+    self.Measures.set_PeriodicMeasures()
+    try:
+      self.Measures.FindEndOfTransient('MaximumThickness', Threshold = Threshold, Windowlength = Windowlength)
+      # simulation is not in transient stage
+      self.Transient = False
+      self.Measures.CutOffTransient()
+      self.Periodic = True
+    except TransientError:
+      # simulation is still in transient stage
+      self.Transient = True
+      self.Periodic = False
+
   def set_OutputDT(self):
     tend = self.t[-1]
     tstart = self.t[0]
@@ -636,22 +655,25 @@ class PrecipitiSimu(Simulation):
     index = int(self.tmin/self.OutputDT)
     return index
   # Check if the simulation has even run long enough
-  def MinimumDurationPassed(self, NoDomains = 1):
+  def set_MinimumDurationPassed(self, NoDomains = 1):
     if(not hasattr(self, 'tmin')):
       self.set_MinimumDuration(NoDomains)
     if(self.t[-1]>self.tmin):
-      return True
+      self.MinimumDurationPassed = True
     else:
       print('Simulation is too short:')
       print(str(self.path))
-      return False
+      self.MinimumDurationPassed = False
   def set_MinimumDuration(self, NoDomains = 1):
     self.tmin = self.params['Ly']/self.params['v']*NoDomains
 
-  def CharacterizeSolution(self, n = 200, eps = 1e-10, **kwargs):
+  def CharacterizeSolution(self, NoDomains = 1.2, n = 200, eps = 1e-10, Ridgekwargs={}, Periodickwargs={}):
+    self.set_MinimumDurationPassed(NoDomains)
     self.set_Stationary(n, eps)
-    self.set_Ridge(n, **kwargs)
+    self.set_Ridge(n, **Ridgekwargs)
     self.set_Deposit(n)
+    if(not self.Stationary and self.Deposit):
+      self.set_Periodic(**Periodickwargs)
 
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
   def set_Ridge(self, n = 200, **kwargs):
