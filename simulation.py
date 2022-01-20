@@ -2,9 +2,19 @@ import numpy as np
 from solution import solution
 from pathlib import Path,PurePath
 import cuda
-from cuda import convert, IndexWindowError
+from cuda import convert
 import time
 # import multiprocessing as mp
+
+class TransientError(Exception):
+  """Exception raised for non-existing EndOfTransient attribute."""
+  def __init__(self, message):
+      self.message = message
+
+class IndexWindowError(IndexError):
+  """Exception raised for bad window size in simulmeasure class."""
+  def __init__(self, message):
+      self.message = message
 
 # default values
 attribute = 'imagenumber'
@@ -26,15 +36,16 @@ class SimulMeasures:
     # referencewindow
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     return [np.sum(self.window(i, MeasureAttribute, Windowlength)*ReferenceWindow) for i in range(i0)]
-  def FindEndOfTransient(self, *args, Threshold = 1e-3, **kwargs):
-    distribution = self.WindowSimilarityDistribution(*args, **kwargs)
+
+  def FindEndOfTransient(self, MeasureAttribute, Threshold = 1e-3, **kwargs):
+    distribution = self.WindowSimilarityDistribution(MeasureAttribute, **kwargs)
     # return the first index of distrubtion whose element is below threshold
     # aka: the first shifted window that overlaps with the window beginning at i0 (default: last window) by less than Threshold
     # this holds even for n-period cases since one of 1...n will coincide with the ReferenceWindow
     self.set_EndOfTransient(distribution, Threshold)
     return distribution
 
-  def WindowSimilarityDistribution(self, MeasureAttribute, Threshold = 1e-3, i0 = None, Windowlength = 20):
+  def WindowSimilarityDistribution(self, MeasureAttribute, i0 = None, Windowlength = 20):
     if (i0 == None):
       i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
@@ -49,9 +60,9 @@ class SimulMeasures:
     mask = distribution < Threshold
     # if no element fulfills this condition
     if(not mask.any()):
-      print('This simulation is likely still in a transient stage. ')
+      raise TransientError('This simulation is likely still in a transient stage. ')
     else:
-      self.EndOfTransient = np.argmax()
+      self.EndOfTransient = np.argmax(mask)
     # print(self.EndOfTransient)
 
 
