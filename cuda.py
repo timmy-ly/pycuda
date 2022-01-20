@@ -16,10 +16,7 @@ class GridError(Error):
   """Exception raised for mismatched grid parameters."""
   def __init__(self, message):
       self.message = message
-class IndexWindowError(IndexError):
-  """Exception raised for mismatched grid parameters."""
-  def __init__(self, message):
-      self.message = message
+
 # class GridSpacing:
 #   def __init__(self, dx):
 #     self.dx = dx
