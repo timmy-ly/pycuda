@@ -3,6 +3,7 @@ from pathlib import Path
 import cuda
 from simulation import Simulation, SimulMeasures, TransientError
 from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
+from scipy.signal import find_peaks
 
 attribute = 'imagenumber'
 class OnlyOneMinimumError(Exception):
@@ -10,6 +11,8 @@ class OnlyOneMinimumError(Exception):
 class SimulatedTooShortError(Exception):
   pass
 class NoDepositError(Exception):
+  pass
+class OnsetTooLateError(Exception):
   pass
 class PrecipitiMeasures(SolutionMeasures):
   def __init__(self):
@@ -592,6 +595,16 @@ class PrecipitiSimu(Simulation):
                     objectclass = objectclass, attribute = attribute)
                     # objectclass = objectclass, attribute = attribute, nCPU = nCPU)
     self.Measures = PrecipitiSimulMeasures()
+    self.set_SpatialGrid1Dy()
+
+  # newer better method to calculate periods, amplitudes and other properties
+  def set_Periodic(self, NoDomains = 1.2, FindPeaksKwargs={'height':0, 'prominence':0}):
+    self.set_PrecipitationOnset()
+    self.set_MPIdx()
+    self.set_tminIndex(NoDomains)
+    self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
+    PeakIndices, properties = find_peaks(self.ZetaOfT, **FindPeaksKwargs)
+    return PeakIndices, properties
 
   # Calculate the simulation measures, mainly for periodic solutions
   # havent tested yet if it successfully ignores non-periodic solutions
@@ -604,18 +617,15 @@ class PrecipitiSimu(Simulation):
   # for drawn out material to reach the end of the domain
   # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
   # should be >1
-  def set_Periodic(self):
-    pass
-
   def set_Periodic_old(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
                   height = (None, 0), NoDomains = 1.2, Threshold = 1e-3, Windowlength = 20):
     # Spatial coordinate a peak has to pass to be measured
     MeasurePt = RelativeMeasurePt*self.params["Ly"]
     # initialize ClosestPeakPositionOld
     ClosestPeakPositionOld = 0
-    tminIndex = self.tminIndex(NoDomains)
+    self.set_tminIndex(NoDomains)
     # main algorithm. loop through each timestep to find the peaks and measure their properties
-    for sol in self.sols[tminIndex:]:
+    for sol in self.sols[self.tminIndex:]:
       # print(sol.imagenumber)
       # look for peaks (by looking for minima)
       try:
@@ -656,7 +666,16 @@ class PrecipitiSimu(Simulation):
       self.Transient = True
       self.Periodic = False
 
-  def set_PrecipitationOnset(self, n):
+  def set_MPIdx(self, ybuffer = 100):
+    Ly = self.params['Ly']
+    mp1 = self.PrecipitationOnset + ybuffer
+    mp2 = self.PrecipitationOnset + (Ly-self.PrecipitationOnset)/2
+    self.MPIdx = cuda.find_nearest(self.y, np.min([mp1, mp2]))
+    # print(self.MeasurePoint)
+    # if(self.MeasurePoint>=0.95*Ly):
+    #   raise OnsetTooLateError
+
+  def set_PrecipitationOnset(self, n = 200):
     if(not hasattr(self, 'Deposit')):
       self.set_Deposit(n)
       if(not self.Deposit):
@@ -677,13 +696,13 @@ class PrecipitiSimu(Simulation):
     tstart = self.t[0]
     Deltat = tend - tstart
     self.OutputDT = Deltat/(len(self.t) - 1)
-  def tminIndex(self, NoDomains):
+  def set_tminIndex(self, NoDomains):
     if(not hasattr(self, 'OutputDT')):
       self.set_OutputDT()
     if(not hasattr(self, 'tmin')):
       self.set_MinimumDuration(NoDomains)
-    index = int(self.tmin/self.OutputDT)
-    return index
+    self.tminIndex = int(self.tmin/self.OutputDT)
+
   # Check if the simulation has even run long enough
   def set_MinimumDurationPassed(self, NoDomains = 1):
     if(not hasattr(self, 'tmin')):
