@@ -1,6 +1,7 @@
 import numpy as np
 import warnings
 from pathlib import Path, PurePath
+from scipy.signal import find_peaks
 # scipy in interpolation
 
 class Error(Exception):
@@ -125,6 +126,41 @@ class PhaseData:
     n = len(list(Path.glob(self.FilePattern)))
     Parameters['n'] = n
     return Parameters
+
+
+def FindHighestPeaks1D(data1D, FractionOfMaximumProminence = 0, PeakSamples = 10, 
+                      **findpeaksKwargs):
+    PeakIndices, properties = find_peaks(data1D, **findpeaksKwargs)
+    # get the reference prominence as stated above
+    n = len(properties['prominences'])
+    if(PeakSamples>n):
+      PeakSamples = n
+    MaxProminence = np.max(properties['prominences'][-PeakSamples:])
+    # exclude the peaks that have too small prominence
+    ProminenceMask = MaskFromValue(properties, 'prominences', MaxProminence, 
+                                      FractionOfMaximumProminence)
+    ExcludePeaksFromProperties(properties, PeakIndices, ProminenceMask)
+    # Update PeakIndices
+    PeakIndices = PeakIndices[ProminenceMask]
+    return PeakIndices, properties
+# create mask that only takes the values of key that are above maximum*fraction
+def MaskFromValue(properties, key, value, fraction):
+  return properties[key]>(value*fraction)
+
+# take each property and mask each array
+# for my purpose it would have been better if scipy.find_peaks returned an array
+# of peak objects so that each property value is tied to each peak
+# the values are only indirectly tied to each peak by their indices in the property
+# arrays right now. It is probabaly done like this with lots of peaks in mind
+def ExcludePeaksFromProperties(properties, ReferenceArray, mask):
+  # only modify those values that have same shape as ReferenceArray
+  n = len(ReferenceArray)
+  for key, value in properties.items():
+    if(len(value) == n):
+      # call dictionary directly in order to change its values
+      properties[key] = value[mask]
+    else:
+      continue
 
 
 def find_nearest(array, value):

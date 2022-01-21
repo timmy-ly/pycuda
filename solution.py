@@ -210,8 +210,8 @@ class solution:
     # get the reference prominence as stated above
     self.GetMaximumProminenceLeft(PeakIndices, properties)
     # exclude the peaks that have too small prominence
-    ProminenceMask = self.MaskFromValue(properties, 'prominences', self.MaxProminenceLeft, FractionOfMaximumProminence)
-    self.ExcludePeaksFromProperties(properties, PeakIndices, ProminenceMask)
+    ProminenceMask = cuda.MaskFromValue(properties, 'prominences', self.MaxProminenceLeft, FractionOfMaximumProminence)
+    cuda.ExcludePeaksFromProperties(properties, PeakIndices, ProminenceMask)
     # Update PeakIndices
     PeakIndices = PeakIndices[ProminenceMask]
     # add peak positions
@@ -274,23 +274,6 @@ class solution:
       ymin = self.Ly/2
     self.SplitDomainRightIndices1D(ymin)
     return data[self.SplitDomainIndices]
-  # create mask that only takes the values of key that are above maximum*fraction
-  def MaskFromValue(self, properties, key, value, fraction):
-    return properties[key]>(value*fraction)
-  # take each property and mask each array
-  # for my purpose it would have been better if scipy.find_peaks returned an array
-  # of peak objects so that each property value is tied to each peak
-  # the values are only indirectly tied to each peak by their indices in the property
-  # arrays right now. It is probabaly done like this with lots of peaks in mind
-  def ExcludePeaksFromProperties(self, properties, ReferenceArray, mask):
-    # only modify those values that have same shape as ReferenceArray
-    n = len(ReferenceArray)
-    for key, value in properties.items():
-      if(len(value) == n):
-        # call dictionary directly in order to change its values
-        properties[key] = value[mask]
-      else:
-        continue
 
     # finite difference methods
   # for the stencils
