@@ -2,12 +2,14 @@ import numpy as np
 from pathlib import Path
 import cuda
 from simulation import Simulation, SimulMeasures, TransientError
-from solution import ErrorNoExtrema, SolutionMeasures, solution, FieldProps
+from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
 
 attribute = 'imagenumber'
-class ErrorOnlyOneMinimum(Exception):
+class OnlyOneMinimumError(Exception):
   pass
-class ErrorSimulatedTooShort(Exception):
+class SimulatedTooShortError(Exception):
+  pass
+class NoDepositError(Exception):
   pass
 class PrecipitiMeasures(SolutionMeasures):
   def __init__(self):
@@ -113,6 +115,7 @@ class precipiti(solution):
         self.set_C()
       if(self.nof >2):
         self.set_phi()
+        self.set_phi1D()
         self.set_zeta()
         self.set_zeta1D()
       self.set_h()
@@ -149,6 +152,8 @@ class precipiti(solution):
     self.DeltaC0 = self.fields[1]/(self.fields[0] + self.fields[1]) - self.C0
   def set_phi(self):
     self.phi = self.fields[2]
+  def set_phi1D(self, **kwargs):
+    self.phi1D = self.get_crosssection_y(self.phi, **kwargs)
   def set_zeta(self):
     self.zeta = self.fields[3]
   def set_zeta1D(self, **kwargs):
@@ -471,10 +476,10 @@ class precipiti(solution):
   # MinimaIndices must be of at least length 2. Otherwise it is unknown where to stop the peak starts or ends
   def SetPeakLeftOfMinimum(self, FieldProperties, Index):
     # if(len(FieldProperties.MinimaIndices)==0):
-    #   raise ErrorNoExtrema('This should not happen as there should not exist an index. ')
+    #   raise NoExtremaError('This should not happen as there should not exist an index. ')
     # elif(len(FieldProperties.MinimaIndices)==1):
     #   print(self.imagenumber, self.t)
-    #   raise ErrorOnlyOneMinimum(
+    #   raise OnlyOneMinimumError(
     #     'Check if solution has advected by one domain, is periodic and has not \
     #      too large period. Else, try increasing domain size')
     # apply to MinimaIndices
@@ -539,6 +544,12 @@ class precipiti(solution):
     c1D = self.transform_crosssection('C')
     yidx = np.argmax(c1D[startidx:endidx])
     self.yCMax = self.y[startidx:endidx][yidx]
+  def get_PrecipitationOnset(self):
+    mask = self.phi1D<0
+    if (not any(mask)):
+      raise NoDepositError
+    else:
+      return np.argmax(mask)
   # overwrite method from ParentClass
   # fields can only be 2D array or 3d array with axis 0 being fieldnr
   def ApplyBC(self, fields=None):
@@ -593,7 +604,10 @@ class PrecipitiSimu(Simulation):
   # for drawn out material to reach the end of the domain
   # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
   # should be >1
-  def set_Periodic(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
+  def set_Periodic(self):
+    pass
+
+  def set_Periodic_old(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
                   height = (None, 0), NoDomains = 1.2, Threshold = 1e-3, Windowlength = 20):
     # Spatial coordinate a peak has to pass to be measured
     MeasurePt = RelativeMeasurePt*self.params["Ly"]
@@ -606,7 +620,7 @@ class PrecipitiSimu(Simulation):
       # look for peaks (by looking for minima)
       try:
         sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence, height = height)
-      except ErrorNoExtrema:
+      except NoExtremaError:
         continue
       # continue if minimaindices has length less than 2, since then the boundaries of the peak are unknown
       if(len(sol.zeta1DProps.MinimaIndices)<2):
@@ -642,6 +656,22 @@ class PrecipitiSimu(Simulation):
       self.Transient = True
       self.Periodic = False
 
+  def set_PrecipitationOnset(self, n):
+    if(not hasattr(self, 'Deposit')):
+      self.set_Deposit(n)
+      if(not self.Deposit):
+        raise NoDepositError
+    IndicesOnset = []
+    for sol in self.sols[-n:]:
+      try:
+        Index = sol.get_PrecipitationOnset()
+      except NoDepositError:
+        continue
+      IndicesOnset.append(Index)
+    IndexOnset = np.max(IndicesOnset)
+    self.PrecipitationOnset = sol.y[IndexOnset]
+      
+  
   def set_OutputDT(self):
     tend = self.t[-1]
     tstart = self.t[0]
