@@ -35,6 +35,17 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanBaseThickness = None
     self.MeanProminence = None
   # save measures
+  def SaveMeasures(self, properties, t, BaseThickness):
+    self.t = t
+    self.MaximumThickness = np.array(properties['peak_heights'])[1:]
+    self.Prominence = np.array(properties['prominences'])[1:]
+    self.BaseThickness = np.array(BaseThickness)
+    self.TransformToPeriods()
+
+  def TransformToPeriods(self):
+    self.Periods = self.t - np.roll(self.t, 1)
+    self.Periods = self.Periods[1:]
+  # save measures
   def SaveMeasuresToLists(self, sol):
     self.t.append(sol.t)
     self.MaximumThickness.append(sol.Measures.Max)
@@ -61,6 +72,7 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanBaseThickness = np.sum(self.Periods*self.BaseThickness)/TimeWindow
     self.MeanProminence = np.sum(self.Periods*self.Prominence)/TimeWindow
     self.MeanPeriod = np.mean(self.Periods)
+
   def CutOffTransient(self):
     if(not hasattr(self, 'EndOfTransient')):
       raise TransientError('EndOfTransient attribute does not exist. Try calling FindEndOfTransient') 
@@ -596,15 +608,40 @@ class PrecipitiSimu(Simulation):
                     # objectclass = objectclass, attribute = attribute, nCPU = nCPU)
     self.Measures = PrecipitiSimulMeasures()
     self.set_SpatialGrid1Dy()
+    self.tmin = 0
+    self.tminIndex = 0
 
   # newer better method to calculate periods, amplitudes and other properties
-  def set_Periodic(self, NoDomains = 1.2, FindPeaksKwargs={'height':0, 'prominence':0}):
+  def set_Periodic(self, NoDomains = 1.0, FractionOfMaximumProminence = 0, 
+                  PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
+                  TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
     self.set_PrecipitationOnset()
     self.set_MPIdx()
     self.set_tminIndex(NoDomains)
     self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
-    PeakIndices, properties = find_peaks(self.ZetaOfT, **FindPeaksKwargs)
+    PeakIndices, properties = cuda.FindHighestPeaks1D(
+                              self.ZetaOfT, FractionOfMaximumProminence, 
+                              PeakSamples = PeakSamples, **FindPeaksKwargs)
+    BaseThickness = self.get_BaseThickness(PeakIndices)
+    t = self.t[self.tminIndex:][PeakIndices]
+    self.Measures.SaveMeasures(properties, t, BaseThickness)
+    try:
+      self.Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
+      # simulation has passed transient stage
+      self.Transient = False
+      self.Measures.CutOffTransient()
+      self.Periodic = True
+    except TransientError:
+      # simulation is still in transient stage
+      self.Transient = True
+      self.Periodic = False
     return PeakIndices, properties
+  # For the other quantities we drop the first peak in order to match the shape to the Periods
+  # here, since we measure peaks, we have one less minimum which perfectly matches the shape
+  # of periods
+  def get_BaseThickness(self, PeakIndices):
+    return [np.min(self.ZetaOfT[PeakIndices[i]:PeakIndices[i+1]+1]) 
+                          for i in range(len(PeakIndices)-1)]
 
   # Calculate the simulation measures, mainly for periodic solutions
   # havent tested yet if it successfully ignores non-periodic solutions
@@ -699,7 +736,7 @@ class PrecipitiSimu(Simulation):
   def set_tminIndex(self, NoDomains):
     if(not hasattr(self, 'OutputDT')):
       self.set_OutputDT()
-    if(not hasattr(self, 'tmin')):
+    if(self.tmin == 0):
       self.set_MinimumDuration(NoDomains)
     self.tminIndex = int(self.tmin/self.OutputDT)
 
