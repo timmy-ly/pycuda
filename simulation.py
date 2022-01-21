@@ -46,8 +46,11 @@ class SimulMeasures:
     return distribution
 
   def WindowSimilarityDistribution(self, MeasureAttribute, i0 = None, Windowlength = 20):
-    if (i0 == None):
-      i0 = len(getattr(self, MeasureAttribute)) - 1 - Windowlength
+    n = len(getattr(self, MeasureAttribute))
+    if(Windowlength > n):
+      raise IndexWindowError('windowlength too big/not enough peaks')
+    if(i0 == None):
+      i0 = n - 1 - Windowlength
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
     distribution = np.array([self.WindowSimilarity(ReferenceWindow, self.window(i, MeasureAttribute, Windowlength)) for i in range(i0)])
     return distribution
