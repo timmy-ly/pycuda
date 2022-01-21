@@ -2,7 +2,7 @@ import numpy as np
 from scipy.signal import find_peaks
 import cuda
 from cuda import convert
-class ErrorNoExtrema(Exception):
+class NoExtremaError(Exception):
   pass
 
 class SolutionMeasures:
@@ -206,7 +206,7 @@ class solution:
     # find highest peaks in full domain
     PeakIndices, properties = self.FindPeaks1D(data1D, **kwargs)
     if(len(PeakIndices)==0):
-      raise ErrorNoExtrema('Could not find extrema or missing left boundary of the peak')
+      raise NoExtremaError('Could not find extrema or missing left boundary of the peak')
     # get the reference prominence as stated above
     self.GetMaximumProminenceLeft(PeakIndices, properties)
     # exclude the peaks that have too small prominence
@@ -234,7 +234,7 @@ class solution:
     # see FindMinima1D for minima algorithm
     PeakIndices, properties = find_peaks(data1D, height = height, prominence = prominence)
     # if(len(PeakIndices)==0):
-      # raise ErrorNoExtrema('Could not find extrema or missing left boundary of the peak')
+      # raise NoExtremaError('Could not find extrema or missing left boundary of the peak')
     return PeakIndices, properties
   # # wrapper for scipy's find_peaks
   # def FindMinima1D(self, data):
