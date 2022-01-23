@@ -35,11 +35,12 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanBaseThickness = None
     self.MeanProminence = None
   # save measures
-  def SaveMeasures(self, properties, t, BaseThickness):
+  def SaveMeasures(self, properties, t, BaseThickness = None):
     self.t = t
     self.MaximumThickness = np.array(properties['peak_heights'])[1:]
     self.Prominence = np.array(properties['prominences'])[1:]
-    self.BaseThickness = np.array(BaseThickness)
+    if(BaseThickness is not None):
+      self.BaseThickness = np.array(BaseThickness)
     self.TransformToPeriods()
 
   def TransformToPeriods(self):
@@ -152,6 +153,8 @@ class precipiti(solution):
     self.psi1 = self.fields[0]
   def set_psi2(self):
     self.psi2 = self.fields[1]
+  def set_psi2_1D(self, **kwargs):
+    self.psi2_1D = self.get_crosssection_y(self.psi2, **kwargs)
   def set_h(self):
     if(self.nof >1):
       self.h = self.fields[0] + self.fields[1]
@@ -612,7 +615,7 @@ class PrecipitiSimu(Simulation):
     self.tminIndex = 0
 
   # newer better method to calculate periods, amplitudes and other properties
-  def set_Periodic(self, NoDomains = 1.0, FractionOfMaximumProminence = 0, 
+  def set_PeriodicDeposit(self, NoDomains = 1.0, FractionOfMaximumProminence = 0, 
                   PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
                   TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
     self.set_PrecipitationOnset()
@@ -636,6 +639,46 @@ class PrecipitiSimu(Simulation):
       self.Transient = True
       self.Periodic = False
     return PeakIndices, properties
+  # newer better method to calculate periods, amplitudes and other properties
+  def set_PeriodicSolute(self, NoDomains = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
+                  PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
+                  TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
+    self.ApplyToAll('set_psi2_1D')
+    self.set_tminIndex(NoDomains)
+    MPIdx = int(RelativeMP*self.params['Ny'])
+    self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
+    PeakIndices, properties = cuda.FindHighestPeaks1D(
+                              self.Psi2OfT, FractionOfMaximumProminence, 
+                              PeakSamples = PeakSamples, **FindPeaksKwargs)
+    self.Psi2Measures = PrecipitiSimulMeasures()
+    t = self.t[self.tminIndex:][PeakIndices]
+    self.Psi2Measures.SaveMeasures(properties, t)
+    try:
+      self.Psi2Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
+      # simulation has passed transient stage
+      self.Psi2Measures.CutOffTransient()
+      self.Periodic = True
+    except TransientError:
+      # simulation is still in transient stage
+      self.Periodic = False
+    return PeakIndices, properties
+  def set_TransientByPsi2(self, Samples = 200, **kwargs):
+    self.TransientPsi2 = False
+    PeakIndicesRight = []
+    # loop through solutions
+    for sol in self.sols[-Samples:]:
+      sol.set_psi2_1D()
+      PeakIndices, properties = sol.FindPeaks1D(sol.psi2_1D, **kwargs)
+      PeakIndicesRight.append(PeakIndices[-1])
+    PeakIndicesRight = np.array(PeakIndicesRight)
+    # check if the right most peak is further on the right or equal than previously for each step
+    # if yes: solution is still in transient
+    # if not: probably periodic
+    mask = PeakIndicesRight[1:]>=PeakIndicesRight[:-1]
+    if(np.all(mask)):
+      self.TransientPsi2 = True
+    # return PeakIndicesRight
+
   # For the other quantities we drop the first peak in order to match the shape to the Periods
   # here, since we measure peaks, we have one less minimum which perfectly matches the shape
   # of periods
@@ -762,7 +805,7 @@ class PrecipitiSimu(Simulation):
       self.Transient = False
       self.Periodic = False
     elif(self.Deposit):
-      self.set_Periodic(**Periodickwargs)
+      self.set_PeriodicDeposit(**Periodickwargs)
     else:
       print('no deposit, not stationary. \
       Probably Ridges and/or pinned/depinned foot. Could be transient')
