@@ -2,6 +2,7 @@ import numpy as np
 import warnings
 from pathlib import Path, PurePath
 from scipy.signal import find_peaks
+import os
 # scipy in interpolation
 
 class Error(Exception):
@@ -100,14 +101,17 @@ class PhaseData:
       # get parameter sets from one of the frames
       Parameters = self.GetParametersFromSol(DataPath)
       # get the relevant parameter values as outerkeys
-      outerkey = (Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
+      outerkey = tuple(Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
       if(outerkey not in self.DataPoints):
         self.DataPathsToUpdate.append(DataPath)
       elif(self.DataPoints[outerkey]['n']<Parameters['n']):
         self.DataPathsToUpdate.append(DataPath)
+  def DeleteOriginalFile(self):
+    if os.path.exists(self.PhaseDataName):
+      os.remove(self.PhaseDataName)
   # 
   def GetOuterkeys(self, DataPoint):
-    return (DataPoint[ParameterStr] for ParameterStr in self.ParameterStrs)
+    return tuple(DataPoint[ParameterStr] for ParameterStr in self.ParameterStrs)
 
   # update DataPoints
   def AddUpdateDataToDict(self, DataPoint):
