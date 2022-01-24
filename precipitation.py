@@ -684,6 +684,8 @@ class PrecipitiSimu(Simulation):
     mask = PeakIndicesRight[1:]>=PeakIndicesRight[:-1]
     if(np.all(mask)):
       self.TransientPsi2 = True
+    else:
+      self.Periodic = True
     # return PeakIndicesRight
 
   # For the other quantities we drop the first peak in order to match the shape to the Periods
