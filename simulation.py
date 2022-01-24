@@ -16,6 +16,11 @@ class IndexWindowError(IndexError):
   def __init__(self, message):
       self.message = message
 
+class SimulatedTooShortError(Exception):
+  """Exception raised for too short simulation."""
+  def __init__(self, message):
+      self.message = message
+
 # default values
 attribute = 'imagenumber'
 class SimulMeasures:
@@ -25,7 +30,7 @@ class SimulMeasures:
     # data = getattr(self, MeasureAttribute) - getattr(self, 'Mean' + MeasureAttribute)
     data = getattr(self, MeasureAttribute)
     if(i+Windowlength > len(data)):
-      raise IndexWindowError('windowlength too big or index i too large/small')
+      raise SimulatedTooShortError('windowlength too big or index i too large/small')
     WindowData = data[i:i+Windowlength]
     # return WindowData/np.max(np.abs(WindowData))
     return WindowData
@@ -48,7 +53,7 @@ class SimulMeasures:
   def WindowSimilarityDistribution(self, MeasureAttribute, i0 = None, Windowlength = 20):
     n = len(getattr(self, MeasureAttribute))
     if(Windowlength > n):
-      raise IndexWindowError('windowlength too big/not enough peaks')
+      raise SimulatedTooShortError('windowlength too big/not enough peaks')
     if(i0 == None):
       i0 = n - 1 - Windowlength
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
@@ -229,14 +234,15 @@ class Simulation:
   # check if the solution is stationary
   # eps: threshold / maximum error
   # n: last n frames to use
-  def set_Stationary(self, n = 200, eps = 1e-10):
+  def set_Stationary(self, nSamples = 200, eps = 1e-10):
+    self.CheckSampleSize(nSamples)
     # initialize maximumerror
     self.MaximumError = 0
     self.Stationary = True
     # loop through last n solutions
-    for i in np.arange(n):
+    for i in np.arange(nSamples):
       # map i such that indices go from small to big
-      index = i - n
+      index = i - nSamples
       # take previous solution as reference
       sol1 = self.sols[index - 1]
       sol2 = self.sols[index]
@@ -249,9 +255,9 @@ class Simulation:
       if(Norm > eps):
         self.Stationary = False
         break
-
-    
-
+  def CheckSampleSize(self, nSamples):
+    if(nSamples < len(self.sols)):
+      raise SimulatedTooShortError('Not enough frames or too many Samples needed')
   
     
 

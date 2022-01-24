@@ -1,15 +1,14 @@
 import numpy as np
 from pathlib import Path
 import cuda
-from simulation import Simulation, SimulMeasures, TransientError
+from simulation import Simulation, SimulMeasures, TransientError, IndexWindowError, SimulatedTooShortError
 from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
 from scipy.signal import find_peaks
 
 attribute = 'imagenumber'
 class OnlyOneMinimumError(Exception):
   pass
-class SimulatedTooShortError(Exception):
-  pass
+
 class NoDepositError(Exception):
   pass
 class OnsetTooLateError(Exception):
@@ -613,6 +612,12 @@ class PrecipitiSimu(Simulation):
     self.set_SpatialGrid1Dy()
     self.tmin = 0
     self.tminIndex = 0
+    self.Stationary = False
+    self.TooShort = False
+    self.Periodic = False
+    self.Ridge = False
+    self.Deposit = False
+    self.Transient = False
 
   # newer better method to calculate periods, amplitudes and other properties
   def set_PeriodicDeposit(self, NoDomains = 1.0, FractionOfMaximumProminence = 0, 
@@ -632,36 +637,37 @@ class PrecipitiSimu(Simulation):
       self.Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
       # simulation has passed transient stage
       self.Transient = False
-      self.Measures.CutOffTransient()
       self.Periodic = True
-    except TransientError:
+      self.Measures.CutOffTransient()
+    except TransientError as e:
       # simulation is still in transient stage
       self.Transient = True
       self.Periodic = False
+      print(e)
     return PeakIndices, properties
   # newer better method to calculate periods, amplitudes and other properties
-  def set_PeriodicSolute(self, NoDomains = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
-                  PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
-                  TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
-    self.ApplyToAll('set_psi2_1D')
-    self.set_tminIndex(NoDomains)
-    MPIdx = int(RelativeMP*self.params['Ny'])
-    self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
-    PeakIndices, properties = cuda.FindHighestPeaks1D(
-                              self.Psi2OfT, FractionOfMaximumProminence, 
-                              PeakSamples = PeakSamples, **FindPeaksKwargs)
-    self.Psi2Measures = PrecipitiSimulMeasures()
-    t = self.t[self.tminIndex:][PeakIndices]
-    self.Psi2Measures.SaveMeasures(properties, t)
-    try:
-      self.Psi2Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
-      # simulation has passed transient stage
-      self.Psi2Measures.CutOffTransient()
-      self.Periodic = True
-    except TransientError:
-      # simulation is still in transient stage
-      self.Periodic = False
-    return PeakIndices, properties
+  # def set_PeriodicSolute(self, NoDomains = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
+  #                 PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
+  #                 TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
+  #   self.ApplyToAll('set_psi2_1D')
+  #   self.set_tminIndex(NoDomains)
+  #   MPIdx = int(RelativeMP*self.params['Ny'])
+  #   self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
+  #   PeakIndices, properties = cuda.FindHighestPeaks1D(
+  #                             self.Psi2OfT, FractionOfMaximumProminence, 
+  #                             PeakSamples = PeakSamples, **FindPeaksKwargs)
+  #   self.Psi2Measures = PrecipitiSimulMeasures()
+  #   t = self.t[self.tminIndex:][PeakIndices]
+  #   self.Psi2Measures.SaveMeasures(properties, t)
+  #   try:
+  #     self.Psi2Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
+  #     # simulation has passed transient stage
+  #     self.Psi2Measures.CutOffTransient()
+  #     self.Periodic = True
+  #   except TransientError:
+  #     # simulation is still in transient stage
+  #     self.Periodic = False
+  #   return PeakIndices, properties
   def set_TransientByPsi2(self, Samples = 200, **kwargs):
     self.TransientPsi2 = False
     PeakIndicesRight = []
@@ -788,48 +794,62 @@ class PrecipitiSimu(Simulation):
     if(not hasattr(self, 'tmin')):
       self.set_MinimumDuration(NoDomains)
     if(self.t[-1]>self.tmin):
-      self.MinimumDurationPassed = True
+      self.TooShort = False
     else:
-      print('Simulation is too short:')
-      print(str(self.path))
-      self.MinimumDurationPassed = False
+      self.TooShort = True
+      raise SimulatedTooShortError('Minimum Duration not passed: ' + str(self.path))
   def set_MinimumDuration(self, NoDomains = 1):
     self.tmin = self.params['Ly']/self.params['v']*NoDomains
 
-  def CharacterizeSolution(self, NoDomains = 1.2, n = 200, eps = 1e-10, Ridgekwargs={}, Periodickwargs={}):
-    self.set_MinimumDurationPassed(NoDomains)
-    self.set_Stationary(n, eps)
-    self.set_Ridge(n, **Ridgekwargs)
-    self.set_Deposit(n)
-    if(self.Stationary):
-      self.Transient = False
-      self.Periodic = False
-    elif(self.Deposit):
-      self.set_PeriodicDeposit(**Periodickwargs)
-    else:
-      print('no deposit, not stationary. \
-      Probably Ridges and/or pinned/depinned foot. Could be transient')
-      self.Transient = True
-      self.Periodic = True
+  def CharacterizeSolution(self, NoDomains = 1.0, nSamples = 200, eps = 1e-10, Ridgekwargs={}, 
+                            Periodickwargs={}, Psi2kwargs={}):
+    try: 
+      # check if enough advected
+      self.set_MinimumDurationPassed(NoDomains)
+      # check if enough frames
+      self.CheckSampleSize(nSamples)
+      # check if stationary
+      self.set_Stationary(nSamples, eps)
+      # check if h has ridge
+      self.set_Ridge(nSamples, **Ridgekwargs)
+      # check if zeta>0
+      self.set_Deposit(nSamples)
+      # check periodicity of zeta or psi2(if no deposit)
+      if(not self.Stationary):
+        if(self.Deposit):
+          self.set_PeriodicDeposit(**Periodickwargs)
+          if(self.Transient):
+            raise SimulatedTooShortError('Transient')
+        else:
+          self.set_TransientByPsi2(nSamples, **Psi2kwargs)
+          if(self.TransientPsi2):
+            raise SimulatedTooShortError('Transient')
+    except SimulatedTooShortError as e:
+      print(e)
+      return
+
+
 
   # Check if the last n solutions have at least one ridge, aka at least one local maximum
-  def set_Ridge(self, n = 200, **kwargs):
+  def set_Ridge(self, nSamples = 200, **FindPeaksKwargs):
+    self.CheckSampleSize(nSamples)
     self.Ridge = False
     # loop through solutions
-    for sol in self.sols[-n:]:
+    for sol in self.sols[-nSamples:]:
       data1D = sol.get_crosssection_y(sol.h)
       # allocate data to Field object
       if(not hasattr(self, 'h1DProps')):
         sol.set_FieldProps(data1D, 'h1D')
-      PeakIndices, properties = sol.FindPeaks1D(data1D, **kwargs)
+      PeakIndices, properties = sol.FindPeaks1D(data1D, **FindPeaksKwargs)
       sol.h1DProps.MaximaIndices = PeakIndices
       sol.h1DProps.properties = properties
       if(len(PeakIndices)>0):
         self.Ridge = True
         break
 
-  def set_Deposit(self, n = 200):
-    for sol in self.sols[-n:]:
+  def set_Deposit(self, nSamples = 200):
+    self.CheckSampleSize(nSamples)
+    for sol in self.sols[-nSamples:]:
       phi1D = sol.get_crosssection_y(sol.phi)
       SolidPhase = phi1D < 0
       if(any(SolidPhase)):
