@@ -92,9 +92,16 @@ class PhaseData:
   def WriteToFile(self):
     with open(self.PhaseDataName, 'w') as f:
       f.write(" ".join(self.ParameterStrs + self.AdditionalColumns) + "\n")
-      for DataPoint in self.DataPoints.values():
+      keys = self.Sort()
+      for key in keys:
+        DataPoint = self.DataPoints[key]
+      # for DataPoint in self.DataPoints.values():
         InnerValues = [str(InnerValue) for InnerValue in DataPoint.values()]
         f.write(" ".join(InnerValues) + "\n")
+  # cannot sort dictionary, must copy keys and then sort
+  def Sort(self):
+    # I think this is the only part that I have not made independent of dimension yet
+    return sorted(self.DataPoints.keys(), key=lambda x: (x[0], x[1]))
 
   # check if DataPaths contains simulations that are not present in PhaseDataName.dat
   # also check if existing entries have less frames
