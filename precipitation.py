@@ -676,7 +676,11 @@ class PrecipitiSimu(Simulation):
     for sol in self.sols[-Samples:]:
       sol.set_psi2_1D()
       PeakIndices, properties = sol.FindPeaks1D(sol.psi2_1D, **kwargs)
-      PeakIndicesRight.append(PeakIndices[-1])
+      try:
+        PeakIndicesRight.append(PeakIndices[-1])
+      except IndexError:
+        raise SimulatedTooShortError('no Peaks found in psi2. Solution could be stationary \
+        and not calculated long enough...or it is a periodic foot solution')
     PeakIndicesRight = np.array(PeakIndicesRight)
     # check if the right most peak is further on the right or equal than previously for each step
     # if yes: solution is still in transient
@@ -824,7 +828,10 @@ class PrecipitiSimu(Simulation):
           if(self.Transient):
             self.TooShort = True
         else:
-          self.set_TransientByPsi2(nSamples, **Psi2kwargs)
+          try:
+            self.set_TransientByPsi2(nSamples, **Psi2kwargs)
+          except IndexError as e:
+            raise IndexError(str(self.path))
           if(self.TransientPsi2):
             self.TooShort = True
     except SimulatedTooShortError as e:
