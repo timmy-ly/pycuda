@@ -36,6 +36,10 @@ def bin(filepath):
   return filepath.with_suffix('.bin')
 
 def convert(val):
+  if(val == 'True'):
+    return True
+  elif(val == 'False'):
+    return False
   constructors = [int, float, str]
   for c in constructors:
     try:
@@ -101,6 +105,7 @@ class PhaseData:
       # get parameter sets from one of the frames
       Parameters = self.GetParametersFromSol(DataPath)
       # get the relevant parameter values as outerkeys
+      # cannot use list, as list is not hashable
       outerkey = tuple(Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
       if(outerkey not in self.DataPoints):
         self.DataPathsToUpdate.append(DataPath)
