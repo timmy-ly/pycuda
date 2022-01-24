@@ -256,7 +256,7 @@ class Simulation:
         self.Stationary = False
         break
   def CheckSampleSize(self, nSamples):
-    if(nSamples < len(self.sols)):
+    if(nSamples > len(self.sols)):
       raise SimulatedTooShortError('Not enough frames or too many Samples needed')
   
     
