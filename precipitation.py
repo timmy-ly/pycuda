@@ -794,12 +794,12 @@ class PrecipitiSimu(Simulation):
 
   # Check if the simulation has even run long enough
   def set_MinimumDurationPassed(self, NoDomains = 1):
-    if(not hasattr(self, 'tmin')):
-      self.set_MinimumDuration(NoDomains)
+    self.set_MinimumDuration(NoDomains)
     if(self.t[-1]>self.tmin):
       self.TooShort = False
     else:
       self.TooShort = True
+      print(self.path)
       raise SimulatedTooShortError('Minimum Duration not passed: ' + str(self.path))
   def set_MinimumDuration(self, NoDomains = 1):
     self.tmin = self.params['Ly']/self.params['v']*NoDomains
