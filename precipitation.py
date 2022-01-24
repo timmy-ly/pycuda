@@ -562,7 +562,8 @@ class precipiti(solution):
     yidx = np.argmax(c1D[startidx:endidx])
     self.yCMax = self.y[startidx:endidx][yidx]
   def get_PrecipitationOnset(self):
-    mask = self.phi1D<0
+    # mask = self.phi1D<0
+    mask = self.zeta1D>0
     if (not any(mask)):
       raise NoDepositError
     else:
@@ -819,13 +820,14 @@ class PrecipitiSimu(Simulation):
         if(self.Deposit):
           self.set_PeriodicDeposit(**Periodickwargs)
           if(self.Transient):
-            raise SimulatedTooShortError('Transient')
+            self.TooShort = True
         else:
           self.set_TransientByPsi2(nSamples, **Psi2kwargs)
           if(self.TransientPsi2):
-            raise SimulatedTooShortError('Transient')
+            self.TooShort = True
     except SimulatedTooShortError as e:
       print(e)
+      self.TooShort = True
       return
 
 
@@ -850,15 +852,14 @@ class PrecipitiSimu(Simulation):
   def set_Deposit(self, nSamples = 200):
     self.CheckSampleSize(nSamples)
     for sol in self.sols[-nSamples:]:
-      phi1D = sol.get_crosssection_y(sol.phi)
-      SolidPhase = phi1D < 0
+      SolidPhase = sol.zeta1D > 0
+  #     phi1D = sol.get_crosssection_y(sol.phi)
+  #     SolidPhase = phi1D < 0
       if(any(SolidPhase)):
         self.Deposit = True
         break
       else:
         self.Deposit = False
-
-
 
 
 
