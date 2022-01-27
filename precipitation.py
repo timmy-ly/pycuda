@@ -398,7 +398,7 @@ class precipiti(solution):
     self.diff2rateMasked = self.mask*self.diff2rate
   def set_osmo(self):
     if(self.ups2==0):
-      self.osmo = 0
+      self.osmo = np.zeros((self.Nx, self.Ny))
     else:
       self.osmo = self.ups2*(np.log(1-self.C) - 1 + self.chi*self.C*self.C)
   def set_evap(self):
