@@ -991,6 +991,5 @@ class XuMeakin(solution):
 
 class XuMeakinSimu(Simulation):
   def __init__(self, path, start = None, end = None):
-    super().__init__(path, start = None, end = None)
-    self.objectclass = XuMeakin
+    super().__init__(path, start = None, end = None, objectclass = XuMeakin)
 
