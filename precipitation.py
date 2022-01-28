@@ -628,9 +628,13 @@ class PrecipitiSimu(Simulation):
     self.set_MPIdx()
     self.set_tminIndex(NoDomains)
     self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
-    PeakIndices, properties = cuda.FindHighestPeaks1D(
-                              self.ZetaOfT, FractionOfMaximumProminence, 
-                              PeakSamples = PeakSamples, **FindPeaksKwargs)
+    try:
+      PeakIndices, properties = cuda.FindHighestPeaks1D(
+                                self.ZetaOfT, FractionOfMaximumProminence, 
+                                PeakSamples = PeakSamples, **FindPeaksKwargs)
+    except ValueError:
+      raise SimulatedTooShortError('no Peaks found in zeta. Solution could be stationary \
+        and not calculated long enough...\n {:}'.format(self.path))
     BaseThickness = self.get_BaseThickness(PeakIndices)
     t = self.t[self.tminIndex:][PeakIndices]
     self.Measures.SaveMeasures(properties, t, BaseThickness)
