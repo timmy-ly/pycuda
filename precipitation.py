@@ -34,34 +34,55 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanBaseThickness = None
     self.MeanProminence = None
   # save measures
-  def SaveMeasures(self, properties, t, BaseThickness = None):
+  def SaveMeasures(self, PeakIndices, properties, t, ZetaOfT):
+    self.PeakIndices = PeakIndices
     self.t = t
+    self.ZetaOfT = ZetaOfT
+    self.tPeaks = t[PeakIndices]
     self.MaximumThickness = np.array(properties['peak_heights'])[1:]
     self.Prominence = np.array(properties['prominences'])[1:]
-    if(BaseThickness is not None):
-      self.BaseThickness = np.array(BaseThickness)
+    self.set_BaseThickness()
     self.TransformToPeriods()
-
   def TransformToPeriods(self):
-    self.Periods = self.t - np.roll(self.t, 1)
+    self.Periods = self.tPeaks - np.roll(self.tPeaks, 1)
     self.Periods = self.Periods[1:]
-  # save measures
-  def SaveMeasuresToLists(self, sol):
-    self.t.append(sol.t)
-    self.MaximumThickness.append(sol.Measures.Max)
-    self.BaseThickness.append(sol.Measures.MinHeight)
-    self.Prominence.append(sol.Measures.Prominence)
-  def ListsToArrays(self):
-    self.t = np.array(self.t)
-    self.MaximumThickness = np.array(self.MaximumThickness)
-    self.BaseThickness = np.array(self.BaseThickness)
-    self.Prominence = np.array(self.Prominence)
+  # For the other quantities we drop the first peak in order to match the shape to the Periods
+  # here, since we measure peaks, we have one less minimum which perfectly matches the shape
+  # of periods. The +1 is there since in a[:i], a[i] is not contained. 
+  def set_BaseThickness(self):
+    self.BaseThickness = [np.min(self.ZetaOfT[self.PeakIndices[i]:self.PeakIndices[i+1]+1]) 
+                          for i in range(len(self.PeakIndices)-1)]
   # calculate the periods and means
+  def set_ZeroDimMeasures(self):
+    TimeWindow = self.tPeaks[-1] - self.tPeaks[0]
+    dt = self.t - np.roll(self.t, 1)
+    self.MeanPeriod = np.mean(self.Periods)
+    self.MeanMaximumThickness = np.sum(self.Periods*self.MaximumThickness)/TimeWindow
+    self.MeanBaseThickness = np.sum(self.Periods*self.BaseThickness)/TimeWindow
+    self.MeanProminence = np.sum(self.Periods*self.Prominence)/TimeWindow
+    self.MeanDeposit = np.sum(dt[1:]*self.ZetaOfT[1:])/TimeWindow
+  def CutOffTransient(self):
+    if(not hasattr(self, 'EndOfTransient')):
+      raise TransientError('EndOfTransient attribute does not exist. Try calling FindEndOfTransient') 
+    n = self.EndOfTransient
+    self.Periods = self.Periods[n:]
+    self.MaximumThickness = self.MaximumThickness[n:]
+    self.BaseThickness = self.BaseThickness[n:]
+    self.Prominence = self.Prominence[n:]
+    # len(tpeaks)=m, len(periods) = m-1 after [1:]
+    # here, we filter periods[n:]. Since tpeaks is longer by 1 at the front, we should
+    # use n+1 there
+    mask = self.t>=self.tPeaks[n+1]
+    self.t = self.t[mask]
+    self.ZetaOfT = self.ZetaOfT[mask]
+
+  # calculate the periods and means
+  # legacy
   def set_PeriodicMeasures(self):
     self.ListsToArrays()
     # calculate Periods
-    self.Periods = self.t - np.roll(self.t, 1)
-    TimeWindow = self.t[-1] - self.t[0]
+    self.Periods = self.tPeaks - np.roll(self.tPeaks, 1)
+    TimeWindow = self.tPeaks[-1] - self.tPeaks[0]
     # since numpy.roll uses periodic BC, we need to drop index 0 on the periods
     # to maintain shape we have to do this for the other quantities too
     self.Periods = self.Periods[1:]
@@ -72,15 +93,19 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanBaseThickness = np.sum(self.Periods*self.BaseThickness)/TimeWindow
     self.MeanProminence = np.sum(self.Periods*self.Prominence)/TimeWindow
     self.MeanPeriod = np.mean(self.Periods)
-
-  def CutOffTransient(self):
-    if(not hasattr(self, 'EndOfTransient')):
-      raise TransientError('EndOfTransient attribute does not exist. Try calling FindEndOfTransient') 
-    n = self.EndOfTransient
-    self.Periods = self.Periods[n:]
-    self.MaximumThickness = self.MaximumThickness[n:]
-    self.BaseThickness = self.BaseThickness[n:]
-    self.Prominence = self.Prominence[n:]
+  # save measures
+  # legacy
+  def SaveMeasuresToLists(self, sol):
+    self.t.append(sol.t)
+    self.MaximumThickness.append(sol.Measures.Max)
+    self.BaseThickness.append(sol.Measures.MinHeight)
+    self.Prominence.append(sol.Measures.Prominence)
+  # legacy
+  def ListsToArrays(self):
+    self.t = np.array(self.t)
+    self.MaximumThickness = np.array(self.MaximumThickness)
+    self.BaseThickness = np.array(self.BaseThickness)
+    self.Prominence = np.array(self.Prominence)
 
 
 def DefaultParams(object):
@@ -635,9 +660,8 @@ class PrecipitiSimu(Simulation):
     except ValueError:
       raise SimulatedTooShortError('no Peaks found in zeta. Solution could be stationary \
         and not calculated long enough...\n {:}'.format(self.path))
-    BaseThickness = self.get_BaseThickness(PeakIndices)
-    t = self.t[self.tminIndex:][PeakIndices]
-    self.Measures.SaveMeasures(properties, t, BaseThickness)
+    t = self.t[self.tminIndex:]
+    self.Measures.SaveMeasures(PeakIndices, properties, t, self.ZetaOfT)
     try:
       self.Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
       # simulation has passed transient stage
@@ -649,6 +673,7 @@ class PrecipitiSimu(Simulation):
       self.Transient = True
       self.Periodic = False
       print(e)
+    self.Measures.set_ZeroDimMeasures()
     return PeakIndices, properties
   # newer better method to calculate periods, amplitudes and other properties
   # def set_PeriodicSolute(self, NoDomains = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
@@ -696,12 +721,7 @@ class PrecipitiSimu(Simulation):
       self.Periodic = True
     # return PeakIndicesRight
 
-  # For the other quantities we drop the first peak in order to match the shape to the Periods
-  # here, since we measure peaks, we have one less minimum which perfectly matches the shape
-  # of periods
-  def get_BaseThickness(self, PeakIndices):
-    return [np.min(self.ZetaOfT[PeakIndices[i]:PeakIndices[i+1]+1]) 
-                          for i in range(len(PeakIndices)-1)]
+
 
   # Calculate the simulation measures, mainly for periodic solutions
   # havent tested yet if it successfully ignores non-periodic solutions
