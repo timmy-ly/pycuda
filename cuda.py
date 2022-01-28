@@ -110,7 +110,12 @@ class PhaseData:
     # loop through the provided simulation paths
     for DataPath in DataPaths:
       # get parameter sets from one of the frames
-      Parameters = self.GetParametersFromSol(DataPath)
+      try:
+        Parameters = self.GetParametersFromSol(DataPath)
+      except FileNotFoundError:
+        print('Probably not even started yet: ')
+        print(DataPath)
+        continue
       # get the relevant parameter values as outerkeys
       # cannot use list, as list is not hashable
       outerkey = tuple(Parameters[ParameterStr] for ParameterStr in self.ParameterStrs)
