@@ -646,12 +646,12 @@ class PrecipitiSimu(Simulation):
     self.Transient = False
 
   # newer better method to calculate periods, amplitudes and other properties
-  def set_PeriodicDeposit(self, NoDomains = 1.0, FractionOfMaximumProminence = 0, 
+  def set_PeriodicDeposit(self, Factor = 1.1, FractionOfMaximumProminence = 0, 
                   PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
                   TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
     self.set_PrecipitationOnset()
     self.set_MPIdx()
-    self.set_tminIndex(NoDomains)
+    self.set_tminIndex(Factor)
     self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
     try:
       PeakIndices, properties = cuda.FindHighestPeaks1D(
@@ -676,11 +676,11 @@ class PrecipitiSimu(Simulation):
     self.Measures.set_ZeroDimMeasures()
     return PeakIndices, properties
   # newer better method to calculate periods, amplitudes and other properties
-  # def set_PeriodicSolute(self, NoDomains = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
+  # def set_PeriodicSolute(self, Factor = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
   #                 PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
   #                 TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
   #   self.ApplyToAll('set_psi2_1D')
-  #   self.set_tminIndex(NoDomains)
+  #   self.set_tminIndex(Factor)
   #   MPIdx = int(RelativeMP*self.params['Ny'])
   #   self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
   #   PeakIndices, properties = cuda.FindHighestPeaks1D(
@@ -730,17 +730,17 @@ class PrecipitiSimu(Simulation):
   # since the minima tend to be larger on the right, there needs to be a bit of tolerance for
   # the minima. 0.9 means that all minima are considered that are at least 0.9 as prominent/deep
   # as the smallest minimum
-  # NoDomains: Since the system is advected, we can approximately calculate how long it takes
+  # Factor: Since the system is advected, we can approximately calculate how long it takes
   # for drawn out material to reach the end of the domain
-  # in general, periodic solutions have relaxed after one domain has passed, therefore, NoDomains
+  # in general, periodic solutions have relaxed after one domain has passed, therefore, Factor
   # should be >1
   def set_Periodic_old(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
-                  height = (None, 0), NoDomains = 1.2, Threshold = 1e-3, Windowlength = 20):
+                  height = (None, 0), Factor = 1.2, Threshold = 1e-3, Windowlength = 20):
     # Spatial coordinate a peak has to pass to be measured
     MeasurePt = RelativeMeasurePt*self.params["Ly"]
     # initialize ClosestPeakPositionOld
     ClosestPeakPositionOld = 0
-    self.set_tminIndex(NoDomains)
+    self.set_tminIndex(Factor)
     # main algorithm. loop through each timestep to find the peaks and measure their properties
     for sol in self.sols[self.tminIndex:]:
       # print(sol.imagenumber)
@@ -813,30 +813,31 @@ class PrecipitiSimu(Simulation):
     tstart = self.t[0]
     Deltat = tend - tstart
     self.OutputDT = Deltat/(len(self.t) - 1)
-  def set_tminIndex(self, NoDomains):
+  def set_tminIndex(self, Factor):
     if(not hasattr(self, 'OutputDT')):
       self.set_OutputDT()
     if(self.tmin == 0):
-      self.set_MinimumDuration(NoDomains)
+      self.set_MinimumDuration(Factor)
     self.tminIndex = int(self.tmin/self.OutputDT)
 
   # Check if the simulation has even run long enough
-  def set_MinimumDurationPassed(self, NoDomains = 1):
-    self.set_MinimumDuration(NoDomains)
+  def set_MinimumDurationPassed(self, Factor = 1.1):
+    self.set_MinimumDuration(Factor)
     if(self.t[-1]>self.tmin):
       self.TooShort = False
     else:
       self.TooShort = True
       print(self.path)
       raise SimulatedTooShortError('Minimum Duration not passed: ' + str(self.path))
-  def set_MinimumDuration(self, NoDomains = 1):
-    self.tmin = self.params['Ly']/self.params['v']*NoDomains
+  def set_MinimumDuration(self, Factor = 1.1):
+    # self.tmin = self.params['Ly']/self.params['v']*Factor
+    self.tmin = self.params['Ly']/(self.params['v'])**Factor
 
-  def CharacterizeSolution(self, NoDomains = 1.0, nSamples = 200, eps = 1e-10, Ridgekwargs={}, 
+  def CharacterizeSolution(self, Factor = 1.1, nSamples = 200, eps = 1e-10, Ridgekwargs={}, 
                             Periodickwargs={}, Psi2kwargs={}):
     try: 
       # check if enough advected
-      self.set_MinimumDurationPassed(NoDomains)
+      self.set_MinimumDurationPassed(Factor)
       # check if enough frames
       self.CheckSampleSize(nSamples)
       # check if stationary
