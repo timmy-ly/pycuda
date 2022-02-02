@@ -149,6 +149,13 @@ class PhaseData:
     return Parameters
 
 
+def GetOnePropertyFromParamFile(path, property):
+  with open(path, 'r') as f:
+    for line in f:
+      entries = line.split()
+      if(entries[0]==property):
+        return convert(entries[1])
+
 def FindHighestPeaks1D(data1D, FractionOfMaximumProminence = 0, PeakSamples = 10, 
                       **findpeaksKwargs):
     PeakIndices, properties = find_peaks(data1D, **findpeaksKwargs)
