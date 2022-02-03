@@ -155,6 +155,20 @@ def GetOnePropertyFromParamFile(path, property):
       entries = line.split()
       if(entries[0]==property):
         return convert(entries[1])
+def GetTwoPropertiesFromParamFile(path, property1, property2):
+  prop1_read = False
+  prop2_read = False
+  with open(path, 'r') as f:
+    for line in f:
+      entries = line.split()
+      if(entries[0]==property1):
+        val1 = convert(entries[1])
+        prop1_read = True
+      elif(entries[0]==property2):
+        val2 = convert(entries[1])
+        prop2_read = True
+      if(prop1_read and prop2_read):
+        return (val1, val2)
 
 def FindHighestPeaks1D(data1D, FractionOfMaximumProminence = 0, PeakSamples = 10, 
                       **findpeaksKwargs):
