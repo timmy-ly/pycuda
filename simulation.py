@@ -3,8 +3,6 @@ from solution import solution
 from pathlib import Path,PurePath
 import cuda
 from cuda import convert
-import time
-# import multiprocessing as mp
 
 class TransientError(Exception):
   """Exception raised for non-existing EndOfTransient attribute."""
@@ -151,9 +149,6 @@ class Simulation:
     self.set_filepaths(pattern = pattern)
     Filepaths = self.Filepaths
     objectclass = self.objectclass
-    # pool = mp.Pool(self.nCPU)
-    # self.sols = pool.map(objectclass, Filepaths)
-    # pool.close()
     self.sols = [objectclass(Filepath) for Filepath in Filepaths]
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
