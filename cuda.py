@@ -304,8 +304,9 @@ def DifferenceNormEvolution(Simul1, Simul2):
     n = len(Simul2.sols)
   else:
     n = len(Simul1.sols)
-  # initialize the error array
-  DifferenceNormArray = np.zeros((nof, n))
+  # initialize the error array, use ones to emphasize the dummy nature
+  # of this initialization
+  DifferenceNormArray = np.ones((nof, n))
   # calculate the error for each timestep
   for i in range(n):
     DifferenceNormArray[:,i] = DifferenceNorm(Simul1.sols[i],Simul2.sols[i])
