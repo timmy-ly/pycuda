@@ -675,29 +675,37 @@ class PrecipitiSimu(Simulation):
       print(e)
     self.Measures.set_ZeroDimMeasures()
     return PeakIndices, properties
-  # newer better method to calculate periods, amplitudes and other properties
-  # def set_PeriodicSolute(self, Factor = 1.0, RelativeMP = 0.95, FractionOfMaximumProminence = 0, 
-  #                 PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
-  #                 TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
-  #   self.ApplyToAll('set_psi2_1D')
-  #   self.set_tminIndex(Factor)
-  #   MPIdx = int(RelativeMP*self.params['Ny'])
-  #   self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
-  #   PeakIndices, properties = cuda.FindHighestPeaks1D(
-  #                             self.Psi2OfT, FractionOfMaximumProminence, 
-  #                             PeakSamples = PeakSamples, **FindPeaksKwargs)
-  #   self.Psi2Measures = PrecipitiSimulMeasures()
-  #   t = self.t[self.tminIndex:][PeakIndices]
-  #   self.Psi2Measures.SaveMeasures(properties, t)
-  #   try:
-  #     self.Psi2Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
-  #     # simulation has passed transient stage
-  #     self.Psi2Measures.CutOffTransient()
-  #     self.Periodic = True
-  #   except TransientError:
-  #     # simulation is still in transient stage
-  #     self.Periodic = False
-  #   return PeakIndices, properties
+  # periodic2
+  def set_PeriodicSolute(self, Factor = 1.0, RelativeMP = 0.9, FractionOfMaximumProminence = 0, 
+                  PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
+                  TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
+    self.ApplyToAll('set_psi2_1D')
+    MPIdx = int(RelativeMP*self.params['Ny'])
+    self.set_tminIndex(Factor)
+    self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
+    try:
+      PeakIndices, properties = cuda.FindHighestPeaks1D(
+                                self.Psi2OfT, FractionOfMaximumProminence, 
+                                PeakSamples = PeakSamples, **FindPeaksKwargs)
+    except ValueError:
+      raise SimulatedTooShortError('no Peaks found in zeta. Solution could be stationary \
+        and not calculated long enough...\n {:}'.format(self.path))
+    self.Psi2Measures = PrecipitiSimulMeasures()
+    t = self.t[self.tminIndex:]
+    self.Psi2Measures.SaveMeasures(PeakIndices, properties, t, self.Psi2OfT)
+    try:
+      self.Psi2Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
+      # simulation has passed transient stage
+      self.TransientPsi2 = False
+      self.Periodic = True
+      self.Psi2Measures.CutOffTransient()
+    except TransientError as e:
+      # simulation is still in transient stage
+      self.TransientPsi2 = True
+      self.Periodic = False
+      print(e)
+      self.Psi2Measures.set_ZeroDimMeasures()
+    return PeakIndices, properties
   def set_TransientByPsi2(self, Samples = 200, **kwargs):
     self.TransientPsi2 = False
     PeakIndicesRight = []
@@ -806,6 +814,14 @@ class PrecipitiSimu(Simulation):
       IndicesOnset.append(Index)
     IndexOnset = np.max(IndicesOnset)
     self.PrecipitationOnset = sol.y[IndexOnset]
+  def set_h_explodes(self, factor = 1.0, n = 200):
+    for sol in self.sols[-n:]:
+      self.hExplodes = False
+      mask = sol.h > sol.h0
+      if(mask.any()):
+        self.hExplodes = True
+        break
+
       
   
   def set_OutputDT(self):
@@ -842,6 +858,10 @@ class PrecipitiSimu(Simulation):
       self.CheckSampleSize(nSamples)
       # check if stationary
       self.set_Stationary(nSamples, eps)
+      # check if h explodes
+      self.set_h_explodes(nSamples)
+      if(self.hExplodes):
+        return
       # check if h has ridge
       self.set_Ridge(nSamples, **Ridgekwargs)
       # check if zeta>0
@@ -853,10 +873,7 @@ class PrecipitiSimu(Simulation):
           if(self.Transient):
             self.TooShort = True
         else:
-          try:
-            self.set_TransientByPsi2(nSamples, **Psi2kwargs)
-          except IndexError as e:
-            raise IndexError(str(self.path))
+          self.set_PeriodicSolute(**Periodickwargs)
           if(self.TransientPsi2):
             self.TooShort = True
     except SimulatedTooShortError as e:
