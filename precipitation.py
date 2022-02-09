@@ -108,32 +108,32 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.Prominence = np.array(self.Prominence)
 
 
-def DefaultParams(object):
-  if(not object.silent):
-    print("Applying DefaultParams")
-  object.nof = 4
-  # model
-  object.v = 0.2
-  object.ups0 = 0.0
-  object.chi = 1.5
-  object.ups1 = 0.0
-  object.ups2 = 1.0
-  object.ups3 = -5.0
-  object.g = 10**-3
-  object.beta = 2.0
-  object.lamb = 1.8
-  object.LAMB = 1.4
-  object.sigma = 1.8
-  object.alpha = 0.0
-  # BC
-  object.bc = 1
-  # BC/IC
-  object.h0 = 20.0
-  object.c0 = 0.3
-  object.phi0 = 1.0
-  # IC
-  object.noise = 0.0
-  object.h1 = 0.0
+# def DefaultParams(object):
+#   if(not object.silent):
+#     print("Applying DefaultParams")
+#   object.nof = 4
+#   # model
+#   object.v = 0.2
+#   object.ups0 = 0.0
+#   object.chi = 1.5
+#   object.ups1 = 0.0
+#   object.ups2 = 1.0
+#   object.ups3 = -5.0
+#   object.g = 10**-3
+#   object.beta = 2.0
+#   object.lamb = 1.8
+#   object.LAMB = 1.4
+#   object.sigma = 1.8
+#   object.alpha = 0.0
+#   # BC
+#   object.bc = 1
+#   # BC/IC
+#   object.h0 = 20.0
+#   object.c0 = 0.3
+#   object.phi0 = 1.0
+#   # IC
+#   object.noise = 0.0
+#   object.h1 = 0.0
 
 
 # methods and attributes that apply to all precipiti problems
@@ -164,8 +164,8 @@ class precipiti(solution):
       self.zeta1DProps = FieldProps()
       self.Measures = PrecipitiMeasures()
     else:
-      self.silent = silent
-      DefaultParams(self)
+      if(not silent):
+        print('no path provided, creating default solution object')
       # except FileNotFoundError:
         # print("no corresponding .dat and/or .bin file")
 
@@ -468,6 +468,41 @@ class precipiti(solution):
   def set_dtzeta(self):
     self.CheckSetAttr("dtphiComov")
     self.dtzeta = -self.alpha*self.h*self.dtphiComov - self.v*self.advzeta
+  def set_tanhIC_pert(self, Ampl = 0, n = 1, hp = 1, ys = 0):
+    x, y = self.x2D, self.y2D
+    ls = (self.h0-hp)/self.beta
+    k = 2*np.pi/(self.Lx/n)
+    Perturbation = Ampl*np.cos(k*x)
+    h = self.h0 - (self.h0 - hp)*np.tanh(((y*(1.0+Perturbation)+self.Ly/self.Ny) - ys)/ls)
+    # solvent
+    c = self.c0*np.ones(self.Ny)
+    c = np.tile(c, (self.Nx, 1))
+    psi1 = (1.0-c)*h
+    # solute
+    psi2 = c*h
+    # phase-field
+    # initialize only solution
+    phi = 0.99*np.ones((self.Nx, self.Ny))
+    # deposit
+    zeta = np.zeros((self.Nx, self.Ny))
+    self.fields = np.concatenate((psi1,psi2,phi,zeta), axis = 0)
+    self.fields = self.fields.reshape((-1, self.Nx, self.Ny))
+  def set_tanhIC(self, hp = 1, ys = 0):
+    y = self.y2D
+    ls = (self.h0-hp)/self.beta
+    h = self.h0 - (self.h0 - hp)*np.tanh(((y+self.Ly/self.Ny) - ys)/ls)
+    # solvent
+    c = self.c0*np.ones(self.Ny)
+    c = np.tile(c, (self.Nx, 1))
+    psi1 = (1.0-c)*h
+    # solute
+    psi2 = c*h
+    # phase-field
+    # initialize only solution
+    phi = 0.99*np.ones((self.Nx, self.Ny))
+    # deposit
+    zeta = np.zeros((self.Nx, self.Ny))
+    self.fields = np.concatenate((psi1,psi2,phi,zeta), axis = 0)
   
 # complex attributes
   # Find largest peaks of zeta on the right
@@ -929,7 +964,7 @@ class PrecipitiSimu(Simulation):
     self.OnsetOfPrecipitationIndex = i
 
 class XuMeakin(solution):
-  def __init__(self, path = None):
+  def __init__(self, path = None, silent = False):
     super().__init__()
     if path is not None:
       self.path = Path(path)
@@ -942,9 +977,8 @@ class XuMeakin(solution):
         self.set_C()
         self.set_phi()
     else:
-      DefaultParams(self)
-      # except FileNotFoundError:
-        # print("no corresponding .dat and/or .bin file")
+      if(not silent):
+        print('no path provided, creating default solution object')
 
   # def readparams(self, filepath=None):
   #   if filepath is None:
