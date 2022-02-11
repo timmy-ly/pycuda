@@ -679,6 +679,7 @@ class PrecipitiSimu(Simulation):
     self.Ridge = False
     self.Deposit = False
     self.Transient = False
+    self.TransientPsi2 = False
 
   # newer better method to calculate periods, amplitudes and other properties
   def set_PeriodicDeposit(self, Factor = 1.1, FractionOfMaximumProminence = 0, 
