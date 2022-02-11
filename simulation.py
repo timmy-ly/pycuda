@@ -24,6 +24,7 @@ attribute = 'imagenumber'
 class SimulMeasures:
   def __init__(self):
     self.t = None
+  # window of measureattribute, kind of like convolution
   def window(self, i, MeasureAttribute, Windowlength = 20):
     # data = getattr(self, MeasureAttribute) - getattr(self, 'Mean' + MeasureAttribute)
     data = getattr(self, MeasureAttribute)
