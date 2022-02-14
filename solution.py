@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.signal import find_peaks
 import cuda
 from cuda import convert
 class NoExtremaError(Exception):
@@ -225,6 +224,7 @@ class solution:
 
   # wrapper for scipy's find_peaks
   def FindPeaks1D(self, data, height = 0, prominence = 0):
+    from scipy.signal import find_peaks
     # does nothing if data is already 1D
     data1D = self.get_crosssection_y(data)
     # provide prominence and height keywords in order to save their values in properties

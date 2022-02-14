@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 from pathlib import Path, PurePath
-from scipy.signal import find_peaks
+
 import os
 # scipy in interpolation
 
@@ -172,6 +172,7 @@ def GetTwoPropertiesFromParamFile(path, property1, property2):
 
 def FindHighestPeaks1D(data1D, FractionOfMaximumProminence = 0, PeakSamples = 10, 
                       **findpeaksKwargs):
+    from scipy.signal import find_peaks
     PeakIndices, properties = find_peaks(data1D, **findpeaksKwargs)
     # get the reference prominence as stated above
     n = len(properties['prominences'])

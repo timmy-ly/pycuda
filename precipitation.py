@@ -3,7 +3,7 @@ from pathlib import Path
 import cuda
 from simulation import Simulation, SimulMeasures, TransientError, IndexWindowError, SimulatedTooShortError
 from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
-from scipy.signal import find_peaks
+# from scipy.signal import find_peaks
 
 attribute = 'imagenumber'
 class OnlyOneMinimumError(Exception):
