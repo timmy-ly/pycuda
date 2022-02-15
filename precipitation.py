@@ -682,11 +682,11 @@ class PrecipitiSimu(Simulation):
     self.TransientPsi2 = False
 
   # newer better method to calculate periods, amplitudes and other properties
-  def set_PeriodicDeposit(self, Factor = 1.1, FractionOfMaximumProminence = 0, 
+  def set_PeriodicDeposit(self,ybuffer = 100, Factor = 1.1, FractionOfMaximumProminence = 0, 
                   PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
                   TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
     self.set_PrecipitationOnset()
-    self.set_MPIdx()
+    self.set_MPIdx(ybuffer)
     self.set_tminIndex(Factor)
     self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
     try:
@@ -828,6 +828,8 @@ class PrecipitiSimu(Simulation):
       self.Periodic = False
 
   def set_MPIdx(self, ybuffer = 100):
+    # determine index of the measurepoint from the onset of precipitation
+    # either shifted to the right by ybuffer or by half of the remaining domain
     Ly = self.params['Ly']
     mp1 = self.PrecipitationOnset + ybuffer
     mp2 = self.PrecipitationOnset + (Ly-self.PrecipitationOnset)/2
