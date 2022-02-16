@@ -224,8 +224,16 @@ class precipiti(solution):
     self.dyyyh = self.dyyy4_m33(self.h)
   def set_dyyyyh(self):
     self.dyyyyh = cuda.dyyyy4_m33(self.h,self.dx4())
+  def set_dxphi(self):
+    self.dxphi = cuda.dx4_m22(self.phi, self.dx())
+  def set_dyphi(self):
+    self.dyphi = cuda.dy4_m22(self.phi, self.dx())
+  def set_dxxphi(self):
+    self.dxxphi = cuda.dxx4_m22(self.phi, self.dx2())
   def set_dyyphi(self):
     self.dyyphi = cuda.dyy4_m22(self.phi, self.dx2())
+  def set_dxyphi(self):
+    self.dxyphi = cuda.dxy4_m22_m22(self.phi, self.dx2())
   def set_M(self):
     self.M = 1.0/3.0*self.h*self.h*self.h
   def set_M1(self):
@@ -445,6 +453,16 @@ class precipiti(solution):
   # this needs to be added for 2D!
   def set_MeanCurv(self):
     self.MeanCurv = 0.0
+  def set_NormGradPhi(self):
+    self.CheckSetAttr("dxphi", "dyphi")
+    self.NormGradPhi = np.sqrt(self.dxphi*self.dxphi + self.dyphi*self.dyphi)
+  def set_lapcurv(self):
+    self.CheckSetAttr("dxphi", "dyphi", "dxxphi", "dyyphi", "dxyphi")
+    dxphi, dyphi, dxxphi, dxyphi, dyyphi = self.dxphi, self.dyphi, self.dxxphi, self.dxyphi, self.dyyphi
+    expression1 = np.divide(dyyphi*dyphi**2,dyphi**2 + dxphi**2, out=np.zeros_like(self.phi), where=( dyphi!=0 ))
+    expression2 = np.divide(dxxphi*dxphi**2,dxphi**2 + dyphi**2, out=np.zeros_like(self.phi), where=( dxphi!=0 ))
+    expression3 = 2.0*np.divide(dxyphi*dxphi*dyphi,dxphi**2 + dyphi**2, out=np.zeros_like(self.phi), where=((dxphi!=0) | (dyphi!=0)))
+    self.lapcurv = expression1 + expression2 + expression3
   def set_dtpsi1Comov(self):
     self.CheckSetAttr("conv1rateComoving", "diff1rateMasked", "MaskedEvap")
     self.dtpsi1Comov = self.conv1rateComoving + self.diff1rateMasked + self.MaskedEvap
