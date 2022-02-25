@@ -993,6 +993,8 @@ class XuMeakin(solution):
       self.readparams(self.path)
       self.set_coordinates()
       self.fields = cuda.readbin(self)
+      if(self.rhs_variant == 'precon'):
+        self.fields[1] = -np.tanh(self.fields[1]/np.sqrt(2))
       self.nof = len(self.fields)
       if(self.nof >1):
         self.set_C()
@@ -1001,43 +1003,13 @@ class XuMeakin(solution):
       if(not silent):
         print('no path provided, creating default solution object')
 
-  # def readparams(self, filepath=None):
-  #   if filepath is None:
-  #     filepath = self.path
-  #   filepath = str(cuda.dat(filepath))
-  #   # print(filepath)
-  #   with open(filepath,'r') as f:
-  #     lines = f.readlines()		#list, not array
-  #   for line in lines:
-  #     if line.split()[0] == 'Nx':
-  #       self.Nx = int(line.split()[1])
-  #     elif line.split()[0] == 'Ny':
-  #       self.Ny = int(line.split()[1])
-  #     elif line.split()[0] == 'Lx':
-  #       self.Lx = float(line.split()[1])
-  #     elif line.split()[0] == 'Ly':
-  #       self.Ly = float(line.split()[1])
-  #     elif line.split()[0] == 't':
-  #       self.t = float(line.split()[1])
-  #     elif line.split()[0] == 'dt':
-  #       self.dt = float(line.split()[1])
-  #     elif line.split()[0] == 'imagenumber':
-  #       self.imagenumber = int(line.split()[1])
-  #     elif line.split()[0] == 'lamb':
-  #       self.lamb = float(line.split()[1])
-  #     elif line.split()[0] == 'PeXM':
-  #       self.PeXM = float(line.split()[1])
-  #     elif line.split()[0] == 'alpha':
-  #       self.alpha = float(line.split()[1])
-  #     elif line.split()[0] == 'c0':
-  #       self.C0 = float(line.split()[1])
-  #     elif line.split()[0] == 'Ceq':
-  #       self.Ceq = float(line.split()[1])
 
   def set_C(self):
     self.C = self.fields[0]
   def set_phi(self):
-    self.phi = self.fields[1]
+      self.phi = self.fields[1]
+  def set_n(self):
+    self.n = -np.sqrt(2)*np.arctanh(self.phi)
   def set_dxphi(self):
     self.dxphi = cuda.dx4_m22(self.phi, self.dx())
   def set_dyphi(self):
@@ -1064,5 +1036,8 @@ class XuMeakin(solution):
 
 class XuMeakinSimu(Simulation):
   def __init__(self, path, start = None, end = None):
-    super().__init__(path, start = None, end = None, objectclass = XuMeakin)
+    super().__init__(path, start = start, end = end, 
+                    objectclass = XuMeakin)
+
+
 
