@@ -84,10 +84,12 @@ class PhaseData:
           # print(firstline)
           innerkeys = firstline.split()
           for line in f:
-            # print(line)
-            DataPoint = LineToDict(innerkeys, line)
-            outerkeys = self.GetOuterkeys(DataPoint)
-            self.DataPoints[outerkeys] = DataPoint
+            # next 2 lines are for trailing lines
+            line = line.rstrip()
+            if(line):
+              DataPoint = LineToDict(innerkeys, line)
+              outerkeys = self.GetOuterkeys(DataPoint)
+              self.DataPoints[outerkeys] = DataPoint
 
   def WriteToFile(self):
     with open(self.PhaseDataName, 'w') as f:
