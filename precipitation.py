@@ -108,34 +108,6 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.Prominence = np.array(self.Prominence)
 
 
-# def DefaultParams(object):
-#   if(not object.silent):
-#     print("Applying DefaultParams")
-#   object.nof = 4
-#   # model
-#   object.v = 0.2
-#   object.ups0 = 0.0
-#   object.chi = 1.5
-#   object.ups1 = 0.0
-#   object.ups2 = 1.0
-#   object.ups3 = -5.0
-#   object.g = 10**-3
-#   object.beta = 2.0
-#   object.lamb = 1.8
-#   object.LAMB = 1.4
-#   object.sigma = 1.8
-#   object.alpha = 0.0
-#   # BC
-#   object.bc = 1
-#   # BC/IC
-#   object.h0 = 20.0
-#   object.c0 = 0.3
-#   object.phi0 = 1.0
-#   # IC
-#   object.noise = 0.0
-#   object.h1 = 0.0
-
-
 # methods and attributes that apply to all precipiti problems
 class precipiti(solution):
   def __init__(self, path = None, silent = False):
