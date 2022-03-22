@@ -153,8 +153,8 @@ class Simulation:
     self.sols = [objectclass(Filepath) for Filepath in Filepaths]
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
-    ObjectClass = self.objectclass
-    self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[self.start:self.end]
+    # ObjectClass = self.objectclass
+    self.sols = sorted(self.sols, key = lambda object:getattr(object,attribute))[self.start:self.end]
   def ExtractSolsSubset(self, ListOfIndices):
     SolsSubset = []
     for i in ListOfIndices:
