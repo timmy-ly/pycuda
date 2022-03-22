@@ -59,6 +59,7 @@ class Continuation():
       ArgsStr += "-outputDT {outputDT:d} ".format(outputDT = self.ParamsOther["outputDT"])
     else:
       ArgsStr += "-pre " + self.ParamsOther["pre"] + " "
+    ArgsStr+= "-t 0 "
     if(self.FirstRun):
       ArgsStr += "-in " + self.IC + " "
       self.FirstRun = False
