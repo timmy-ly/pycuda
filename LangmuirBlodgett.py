@@ -16,6 +16,38 @@ class LB(solution):
       self.fields = cuda.readbin(self)
       self.nof = len(self.fields)
 
+class LBBranch:
+  # def __init__(self, ControlParam, Top, SimulPattern, SolPattern = 'frame.bin'):
+  def __init__(self, ControlParam, Top, SimulPattern, SolPattern = 'frame_[0-9]*.dat'):
+    self.ControlParam = ControlParam
+    self.Top = Path(PurePath(Top))
+    self.SimulPattern = SimulPattern
+    self.SolPattern = SolPattern
+    self.sols = []
+    self.set_sols()
+    self.sort_sols()
+
+  def set_sols(self):
+    self.set_SimulPaths()
+    self.FilePathsToSols()
+
+  # set paths of simulation directories
+  def set_SimulPaths(self):
+    from PathManipulation import GetSubdirs
+    self.SimulPaths = GetSubdirs(self.SimulPattern, self.Top)
+    self.NumberOfFilepaths = len(self.SimulPaths)
+  def FilePathsToSols(self):
+    for SimulPath in self.SimulPaths:
+      FilePaths = list(SimulPath.glob(self.SolPattern))
+      # sort by time
+      FilePath = sorted(FilePaths, key = lambda filepath:cuda.GetOnePropertyFromParamFile(cuda.dat(filepath), "t"))[-1]
+      self.sols.append(LB(FilePath))
+  def sort_sols(self):
+    self.sols = sorted(self.sols, key = lambda obj:getattr(obj,self.ControlParam))
+
+  # def sort_solutions(self, attribute = attribute):
+  #   ObjectClass = self.objectclass
+  #   self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[self.start:self.end]
 class LBCont(Continuation):
   def __init__(self, ParamsCMDArgs, ParamsOther):
     super().__init__(ParamsCMDArgs, ParamsOther)
