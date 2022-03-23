@@ -318,6 +318,15 @@ def DifferenceNormEvolution(Simul1, Simul2):
   return Simul1.t[range(n)], DifferenceNormArray
 
 
+def l2norm(array):
+  shape = np.shape(array)
+  nx = shape[0]
+  if(len(shape)== 2):
+    ny = np.shape(array)[1]
+  else:
+    ny = 1
+  return np.sqrt(np.sum(array*array)/(nx*ny))
+
 
 # interpolate array with Nx, Ny, Lx, Ly to newNx, Newy
 def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
@@ -326,9 +335,18 @@ def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
   y = np.linspace(0,Ly,Ny)
   newx = np.linspace(0,Lx,newNx)
   newy = np.linspace(0,Ly,newNy)
-  interpolatedobject = rbs(x,y,array,bbox=[0,Lx,0,Ly])
+  interpolatedobject = rbs(x,y,array)
   # evaluate interpolatedobject at newx, newy points
   return interpolatedobject.__call__(newx,newy)
+def interp_1D(array, Nx, Lx, newNx):
+  from scipy.interpolate import interp1d
+  dx = Lx/Nx
+  x = dx*np.arange(Nx)
+  newdx = Lx/newNx
+  newx = newdx*np.arange(newNx)
+  interpolatedobject = interp1d(x,array)
+  # evaluate interpolatedobject at newx, newy points
+  return interpolatedobject.__call__(newx)
 
 # finite difference stencils
 # template for stencil components
