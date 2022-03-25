@@ -34,8 +34,8 @@ class LB(solution):
     # evaluate interpolatedobject at newx, newy points
     return interpolatedobject.__call__(newx)
 
-class LBSimul(Simulation):
-  def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', 
+class LBSimu(Simulation):
+  def __init__(self, path, start = None, end = None, file = 'frame_0001.dat', 
               objectclass = LB, attribute = attribute):
     super().__init__(path, start = start, end = end, file = file, 
                     objectclass = objectclass, attribute = attribute)
