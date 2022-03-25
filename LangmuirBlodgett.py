@@ -1,9 +1,11 @@
 import numpy as np
 from continuation import Continuation
+from simulation import Simulation
 from solution import solution
 import cuda
 from pathlib import Path, PurePath
 
+attribute = 'imagenumber'
 class LB(solution):
   def __init__(self, path):
     super().__init__()
@@ -31,6 +33,13 @@ class LB(solution):
     interpolatedobject = interp1d(x,array)
     # evaluate interpolatedobject at newx, newy points
     return interpolatedobject.__call__(newx)
+
+class LBSimul(Simulation):
+  def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', 
+              objectclass = LB, attribute = attribute):
+    super().__init__(path, start = start, end = end, file = file, 
+                    objectclass = objectclass, attribute = attribute)
+    self.set_SpatialGrid1Dy()
 
 class LBBranch:
   # def __init__(self, ControlParam, Top, SimulPattern, SolPattern = 'frame.bin'):
