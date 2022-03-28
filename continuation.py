@@ -16,9 +16,9 @@ class Continuation():
     self.FirstRun = True
     self.LastFramePreviousRun = None
     self.name = ParamsOther["name"]
-    self.cont = True
-    if("cont" in ParamsOther):
-      self.cont = ParamsOther["cont"]
+    self.PrimCont = True
+    if("PrimCont" in ParamsOther):
+      self.PrimCont = ParamsOther["PrimCont"]
 
   def set_Subdir(self):
     self.Subdir = self.SubdirPrefix
@@ -63,7 +63,7 @@ class Continuation():
     else:
       ArgsStr += "-pre " + self.ParamsOther["pre"] + " "
     ArgsStr+= "-t 0 "
-    if(self.FirstRun or (not self.cont)):
+    if(self.FirstRun or (not self.PrimCont)):
       ArgsStr += "-in " + self.IC + " "
       self.FirstRun = False
     else:
