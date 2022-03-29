@@ -43,6 +43,8 @@ class SimulMeasures:
 
   def FindEndOfTransient(self, MeasureAttribute, Threshold = 1e-3, **kwargs):
     distribution = self.WindowSimilarityDistribution(MeasureAttribute, **kwargs)
+    # finds the end of the transient by calculating the deviations of neighboring peaks
+    # if enough(more than Windowlength) differences are below Threshold: end of transient
     # return the first index of distrubtion whose element is below threshold
     # aka: the first shifted window that overlaps with the window beginning at i0 (default: last window) by less than Threshold
     # this holds even for n-period cases since one of 1...n will coincide with the ReferenceWindow
