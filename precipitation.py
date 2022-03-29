@@ -670,6 +670,7 @@ class PrecipitiSimu(Simulation):
     self.Deposit = False
     self.Transient = False
     self.TransientPsi2 = False
+    self.hExplodes = False
 
   # newer better method to calculate periods, amplitudes and other properties
   def set_PeriodicDeposit(self,ybuffer = 100, Factor = 1.1, FractionOfMaximumProminence = 0, 
@@ -844,7 +845,6 @@ class PrecipitiSimu(Simulation):
     self.PrecipitationOnset = sol.y[IndexOnset]
   def set_h_explodes(self, factor = 1.0, n = 200):
     for sol in self.sols[-n:]:
-      self.hExplodes = False
       mask = sol.h > sol.h0
       if(mask.any()):
         self.hExplodes = True
