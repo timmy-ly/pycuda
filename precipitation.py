@@ -30,14 +30,17 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MaximumThickness = []
     self.BaseThickness = []
     self.Prominence = []
+    self.Periods = []
     self.MeanMaximumThickness = None
     self.MeanBaseThickness = None
     self.MeanProminence = None
+    self.MeanDeposit = None
+    self.MeanPeriod = None
   # save measures
-  def SaveMeasures(self, PeakIndices, properties, t, ZetaOfT):
+  def SaveMeasures(self, PeakIndices, properties, t, FieldOfT):
     self.PeakIndices = PeakIndices
     self.t = t
-    self.ZetaOfT = ZetaOfT
+    self.FieldOfT = FieldOfT
     self.tPeaks = t[PeakIndices]
     self.MaximumThickness = np.array(properties['peak_heights'])[1:]
     self.Prominence = np.array(properties['prominences'])[1:]
@@ -50,7 +53,7 @@ class PrecipitiSimulMeasures(SimulMeasures):
   # here, since we measure peaks, we have one less minimum which perfectly matches the shape
   # of periods. The +1 is there since in a[:i], a[i] is not contained. 
   def set_BaseThickness(self):
-    self.BaseThickness = [np.min(self.ZetaOfT[self.PeakIndices[i]:self.PeakIndices[i+1]+1]) 
+    self.BaseThickness = [np.min(self.FieldOfT[self.PeakIndices[i]:self.PeakIndices[i+1]+1]) 
                           for i in range(len(self.PeakIndices)-1)]
   # calculate the periods and means
   def set_ZeroDimMeasures(self):
@@ -60,7 +63,7 @@ class PrecipitiSimulMeasures(SimulMeasures):
     self.MeanMaximumThickness = np.sum(self.Periods*self.MaximumThickness)/TimeWindow
     self.MeanBaseThickness = np.sum(self.Periods*self.BaseThickness)/TimeWindow
     self.MeanProminence = np.sum(self.Periods*self.Prominence)/TimeWindow
-    self.MeanDeposit = np.sum(dt[1:]*self.ZetaOfT[1:])/TimeWindow
+    self.MeanDeposit = np.sum(dt[1:]*self.FieldOfT[1:])/TimeWindow
   def CutOffTransient(self):
     if(not hasattr(self, 'EndOfTransient')):
       raise TransientError('EndOfTransient attribute does not exist. Try calling FindEndOfTransient') 
@@ -74,38 +77,8 @@ class PrecipitiSimulMeasures(SimulMeasures):
     # use n+1 there
     mask = self.t>=self.tPeaks[n+1]
     self.t = self.t[mask]
-    self.ZetaOfT = self.ZetaOfT[mask]
+    self.FieldOfT = self.FieldOfT[mask]
 
-  # calculate the periods and means
-  # legacy
-  def set_PeriodicMeasures(self):
-    self.ListsToArrays()
-    # calculate Periods
-    self.Periods = self.tPeaks - np.roll(self.tPeaks, 1)
-    TimeWindow = self.tPeaks[-1] - self.tPeaks[0]
-    # since numpy.roll uses periodic BC, we need to drop index 0 on the periods
-    # to maintain shape we have to do this for the other quantities too
-    self.Periods = self.Periods[1:]
-    self.MaximumThickness = self.MaximumThickness[1:]
-    self.BaseThickness = self.BaseThickness[1:]
-    self.Prominence = self.Prominence[1:]
-    self.MeanMaximumThickness = np.sum(self.Periods*self.MaximumThickness)/TimeWindow
-    self.MeanBaseThickness = np.sum(self.Periods*self.BaseThickness)/TimeWindow
-    self.MeanProminence = np.sum(self.Periods*self.Prominence)/TimeWindow
-    self.MeanPeriod = np.mean(self.Periods)
-  # save measures
-  # legacy
-  def SaveMeasuresToLists(self, sol):
-    self.t.append(sol.t)
-    self.MaximumThickness.append(sol.Measures.Max)
-    self.BaseThickness.append(sol.Measures.MinHeight)
-    self.Prominence.append(sol.Measures.Prominence)
-  # legacy
-  def ListsToArrays(self):
-    self.t = np.array(self.t)
-    self.MaximumThickness = np.array(self.MaximumThickness)
-    self.BaseThickness = np.array(self.BaseThickness)
-    self.Prominence = np.array(self.Prominence)
 
 
 # methods and attributes that apply to all precipiti problems
@@ -659,11 +632,13 @@ class PrecipitiSimu(Simulation):
     super().__init__(path, start = start, end = end, file = file, 
                     objectclass = objectclass, attribute = attribute)
                     # objectclass = objectclass, attribute = attribute, nCPU = nCPU)
-    self.Measures = PrecipitiSimulMeasures()
+    self.ZetaMeasures = PrecipitiSimulMeasures()
+    self.Psi2Measures = PrecipitiSimulMeasures()
     self.set_SpatialGrid1Dy()
     self.tmin = 0
     self.tminIndex = 0
     self.Stationary = False
+    self.StationaryZeta = False
     self.TooShort = False
     self.Periodic = False
     self.Ridge = False
@@ -673,43 +648,41 @@ class PrecipitiSimu(Simulation):
     self.hExplodes = False
 
   # newer better method to calculate periods, amplitudes and other properties
-  def set_PeriodicDeposit(self,ybuffer = 100, Factor = 1.1, FractionOfMaximumProminence = 0, 
+  def set_PeriodicDeposit(self, FractionOfMaximumProminence = 0, 
                   PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
                   TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
-    self.set_PrecipitationOnset()
-    self.set_MPIdx(ybuffer)
-    self.set_tminIndex(Factor)
+
     self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
     try:
       PeakIndices, properties = cuda.FindHighestPeaks1D(
                                 self.ZetaOfT, FractionOfMaximumProminence, 
                                 PeakSamples = PeakSamples, **FindPeaksKwargs)
+      if(np.all(properties["prominences"]<1e-3)):
+        print(self.path, "deposit may be flat")
     except ValueError:
       raise SimulatedTooShortError('no Peaks found in zeta. Solution could be stationary \
         and not calculated long enough...\n {:}'.format(self.path))
     t = self.t[self.tminIndex:]
-    self.Measures.SaveMeasures(PeakIndices, properties, t, self.ZetaOfT)
+    self.ZetaMeasures.SaveMeasures(PeakIndices, properties, t, self.ZetaOfT)
     try:
-      self.Measures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
+      self.ZetaMeasures.FindEndOfTransient('MaximumThickness', **TransientKwargs)
       # simulation has passed transient stage
       self.Transient = False
       self.Periodic = True
-      self.Measures.CutOffTransient()
+      self.ZetaMeasures.CutOffTransient()
     except TransientError as e:
       # simulation is still in transient stage
       self.Transient = True
       self.Periodic = False
       print(e)
-    self.Measures.set_ZeroDimMeasures()
+    self.ZetaMeasures.set_ZeroDimMeasures()
     return PeakIndices, properties
   # periodic2
-  def set_PeriodicSolute(self, Factor = 1.0, RelativeMP = 0.9, FractionOfMaximumProminence = 0, 
+  def set_PeriodicSolute(self, FractionOfMaximumProminence = 0, 
                   PeakSamples = 10, FindPeaksKwargs={'height':0, 'prominence':0}, 
                   TransientKwargs={'Threshold':1e-3, 'Windowlength':20}):
     self.ApplyToAll('set_psi2_1D')
-    MPIdx = int(RelativeMP*self.params['Ny'])
-    self.set_tminIndex(Factor)
-    self.Psi2OfT = np.array([sol.psi2_1D[MPIdx] for sol in self.sols[self.tminIndex:]])
+    self.Psi2OfT = np.array([sol.psi2_1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
     try:
       PeakIndices, properties = cuda.FindHighestPeaks1D(
                                 self.Psi2OfT, FractionOfMaximumProminence, 
@@ -717,7 +690,6 @@ class PrecipitiSimu(Simulation):
     except ValueError:
       raise SimulatedTooShortError('no Peaks found in zeta. Solution could be stationary \
         and not calculated long enough...\n {:}'.format(self.path))
-    self.Psi2Measures = PrecipitiSimulMeasures()
     t = self.t[self.tminIndex:]
     self.Psi2Measures.SaveMeasures(PeakIndices, properties, t, self.Psi2OfT)
     try:
@@ -731,7 +703,7 @@ class PrecipitiSimu(Simulation):
       self.TransientPsi2 = True
       self.Periodic = False
       print(e)
-      self.Psi2Measures.set_ZeroDimMeasures()
+    self.Psi2Measures.set_ZeroDimMeasures()
     return PeakIndices, properties
   def set_TransientByPsi2(self, Samples = 200, **kwargs):
     self.TransientPsi2 = False
@@ -756,78 +728,16 @@ class PrecipitiSimu(Simulation):
       self.Periodic = True
     # return PeakIndicesRight
 
-
-
-  # Calculate the simulation measures, mainly for periodic solutions
-  # havent tested yet if it successfully ignores non-periodic solutions
-  # RelativeMeasurePt: at which relative point(left of it) in the domain the peaks are measured
-  # FractionOfMaximumProminence: only smallest minima are considered. However
-  # since the minima tend to be larger on the right, there needs to be a bit of tolerance for
-  # the minima. 0.9 means that all minima are considered that are at least 0.9 as prominent/deep
-  # as the smallest minimum
-  # Factor: Since the system is advected, we can approximately calculate how long it takes
-  # for drawn out material to reach the end of the domain
-  # in general, periodic solutions have relaxed after one domain has passed, therefore, Factor
-  # should be >1
-  def set_Periodic_old(self, RelativeMeasurePt = 0.9, FractionOfMaximumProminence = 0.9, 
-                  height = (None, 0), Factor = 1.2, Threshold = 1e-3, Windowlength = 20):
-    # Spatial coordinate a peak has to pass to be measured
-    MeasurePt = RelativeMeasurePt*self.params["Ly"]
-    # initialize ClosestPeakPositionOld
-    ClosestPeakPositionOld = 0
-    self.set_tminIndex(Factor)
-    # main algorithm. loop through each timestep to find the peaks and measure their properties
-    for sol in self.sols[self.tminIndex:]:
-      # print(sol.imagenumber)
-      # look for peaks (by looking for minima)
-      try:
-        sol.FindSmallestMinimaZetaPeaksRight1D(FractionOfMaximumProminence, height = height)
-      except NoExtremaError:
-        continue
-      # continue if minimaindices has length less than 2, since then the boundaries of the peak are unknown
-      if(len(sol.zeta1DProps.MinimaIndices)<2):
-        continue
-      # take the peak closest to the measurept
-      ClosestPeakPosition, ClosestPeakIndex = sol.PositionOfPeakClosestToMP(MeasurePt)
-      # if the minimum closest to the measurepoint is the first minimum, there is no other minimum on the left
-      # this messes up the peak indices if not handled (min=index-1, max=index. Index=0 is problematic)
-      if(ClosestPeakIndex == 0):
-        continue
-      # if the peak is on the right. Check if it previously was on the left. Only 
-      # save Measures if a peak has just passed Measurept
-      if(ClosestPeakPosition>MeasurePt) and (ClosestPeakPositionOld <= MeasurePt):
-        # create attrbibute to save Measures in
-        FieldProperties = sol.zeta1DProps
-        # take data from closest peak
-        sol.SetPeakLeftOfMinimum(FieldProperties, ClosestPeakIndex)
-        sol.SetPeriodicSolutionMeasures()
-        # since there wont be many periods, we simply append
-        # append is faster for lists than for numpy arrays
-        self.Measures.SaveMeasuresToLists(sol)
-      ClosestPeakPositionOld = ClosestPeakPosition
-    # calculate Simulation measures after individual peaks have been analyzed
-    self.Measures.set_PeriodicMeasures()
-    try:
-      self.Measures.FindEndOfTransient('MaximumThickness', Threshold = Threshold, Windowlength = Windowlength)
-      # simulation is not in transient stage
-      self.Transient = False
-      self.Measures.CutOffTransient()
-      self.Periodic = True
-    except TransientError:
-      # simulation is still in transient stage
-      self.Transient = True
-      self.Periodic = False
-
-  def set_MPIdx(self, ybuffer = 100):
+  def set_MPIdx(self, ybuffer = 100, RelativeMP = 0.9):
     # determine index of the measurepoint from the onset of precipitation
     # either shifted to the right by ybuffer or by half of the remaining domain
-    Ly = self.params['Ly']
-    mp1 = self.PrecipitationOnset + ybuffer
-    mp2 = self.PrecipitationOnset + (Ly-self.PrecipitationOnset)/2
-    self.MPIdx = cuda.find_nearest(self.y, np.min([mp1, mp2]))
-    # print(self.MeasurePoint)
-    # if(self.MeasurePoint>=0.95*Ly):
-    #   raise OnsetTooLateError
+    if(self.Deposit):
+      Ly = self.params['Ly']
+      mp1 = self.PrecipitationOnset + ybuffer
+      mp2 = self.PrecipitationOnset + (Ly-self.PrecipitationOnset)/2
+      self.MPIdx = cuda.find_nearest(self.y, np.min([mp1, mp2]))
+    else:
+      self.MPIdx = int(RelativeMP*self.params['Ny'])
 
   def set_PrecipitationOnset(self, n = 200):
     if(not hasattr(self, 'Deposit')):
@@ -877,11 +787,12 @@ class PrecipitiSimu(Simulation):
     # self.tmin = self.params['Ly']/self.params['v']*Factor
     self.tmin = self.params['Ly']/(self.params['v'])**Factor
 
-  def CharacterizeSolution(self, Factor = 1.1, nSamples = 200, eps = 1e-10, Ridgekwargs={}, 
-                            Periodickwargs={}, Psi2kwargs={}):
+  def CharacterizeSolution(self, DurationFactor = 1.1, MPBuffer = 100, RelativeMP = 0.9, 
+                            nSamples = 200, eps = 1e-10, Ridgekwargs={}, 
+                            Periodickwargs={}):
     try: 
       # check if enough advected
-      self.set_MinimumDurationPassed(Factor)
+      self.set_MinimumDurationPassed(DurationFactor)
       # check if enough frames
       self.CheckSampleSize(nSamples)
       # check if stationary
@@ -893,10 +804,19 @@ class PrecipitiSimu(Simulation):
       # check if h has ridge
       self.set_Ridge(nSamples, **Ridgekwargs)
       # check if zeta>0
-      self.set_Deposit(nSamples)
-      # check periodicity of zeta or psi2(if no deposit)
+      self.set_Deposit(nSamples, eps)
+      # check if deposited zeta is stationary, i.e. flat
+      if(self.Deposit):
+        self.set_StationaryZeta(nSamples, eps)
+        # prepare for the periodic measurements
+        self.set_PrecipitationOnset()
+      self.set_MPIdx(MPBuffer, RelativeMP)
+      self.set_tminIndex(DurationFactor)
+      if(self.StationaryZeta):
+        self.set_StationaryZetaMeasures()
+      # check periodicity of zeta (if zeta not stationary) or psi2(if no deposit)
       if(not self.Stationary):
-        if(self.Deposit):
+        if(self.Deposit and (not self.StationaryZeta)):
           self.set_PeriodicDeposit(**Periodickwargs)
           if(self.Transient):
             self.TooShort = True
@@ -927,11 +847,34 @@ class PrecipitiSimu(Simulation):
       if(len(PeakIndices)>0):
         self.Ridge = True
         break
-
-  def set_Deposit(self, nSamples = 200):
+  # check if the deposit is stationary, i.e. flat
+  # eps: threshold / maximum error
+  # n: last n frames to use
+  def set_StationaryZeta(self, nSamples = 200, eps = 1e-10):
+    self.CheckSampleSize(nSamples)
+    # initialize maximumerror
+    self.MaximumError = 0
+    self.StationaryZeta = True
+    # loop through last n solutions
+    for i in np.arange(nSamples):
+      # map i such that indices go from small to big
+      index = i - nSamples
+      # take previous solution as reference
+      sol1 = self.sols[index - 1]
+      sol2 = self.sols[index]
+      # maximum of norm is enough
+      Norm = np.max(sol2.fields[-1] - sol1.fields[-1])
+      # save maximumerror
+      if(Norm > self.MaximumError):
+        self.MaximumError = Norm
+      # check if any error surpasses threshold
+      if(Norm > eps):
+        self.StationaryZeta = False
+        break
+  def set_Deposit(self, nSamples = 200, eps = 1e-10):
     self.CheckSampleSize(nSamples)
     for sol in self.sols[-nSamples:]:
-      SolidPhase = sol.zeta1D > 0
+      SolidPhase = sol.zeta1D > eps
   #     phi1D = sol.get_crosssection_y(sol.phi)
   #     SolidPhase = phi1D < 0
       if(any(SolidPhase)):
@@ -939,6 +882,20 @@ class PrecipitiSimu(Simulation):
         break
       else:
         self.Deposit = False
+  def set_StationaryZetaMeasures(self):
+    Measures = self.ZetaMeasures
+    sol = self.sols[-1]
+    Measures.Periods = np.array([0])
+    Measures.MeanPeriod = np.mean(Measures.Periods)
+    # values taken at MP!
+    Measures.MaximumThickness = np.array(sol.zeta1D[self.MPIdx])
+    Measures.MeanMaximumThickness = np.mean(Measures.MaximumThickness)
+    Measures.BaseThickness = Measures.MaximumThickness
+    Measures.MeanBaseThickness = Measures.MeanMaximumThickness
+    Measures.MeanDeposit = Measures.MeanMaximumThickness
+    Measures.Prominence = np.array([0])
+    Measures.MeanProminence = np.mean(Measures.Prominence)
+
 
 
 
