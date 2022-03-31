@@ -223,7 +223,7 @@ class Simulation:
   def get_field(self,fieldname):
     return np.array([getattr(sol, fieldname) for sol in self.sols])
 
-  # wrapper to apply method to all solutions, functionhandle has to be string
+  # wrapper to apply method to all solutions, functionhandle has to be string and a sol method
   def ApplyToAll(self,FunctionHandle,*args):
     for sol in self.sols:
       getattr(sol, FunctionHandle)(*args)
