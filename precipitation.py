@@ -233,6 +233,15 @@ class precipiti(solution):
       self.set_dfdh()
     dydfdh = self.dy4_m22(self.dfdh)
     self.conv = (self.h**3)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta)) + self.v*self.h   
+  def set_convComoving(self):
+    if(not hasattr(self,"dyh")):
+      self.set_dyh()
+    if(not hasattr(self,"dyyyh")):
+      self.set_dyyyh()
+    if(not hasattr(self,"dfdh")):
+      self.set_dfdh()
+    dydfdh = self.dy4_m22(self.dfdh)
+    self.convComoving = (self.h**3)/3.0*(self.dyyyh - dydfdh - self.g*(self.dyh + self.beta))
   def set_convrate(self):
     if(not hasattr(self,"dyh")):
       self.set_dyh()
