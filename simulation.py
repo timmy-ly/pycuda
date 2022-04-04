@@ -22,7 +22,8 @@ class SimulatedTooShortError(Exception):
 # default values
 attribute = 'imagenumber'
 class SimulMeasures:
-  def __init__(self):
+  def __init__(self, SimulObj = None):
+    self.Simul = SimulObj
     self.t = None
   # window of measureattribute, kind of like convolution
   def window(self, i, MeasureAttribute, Windowlength = 20):
@@ -54,7 +55,7 @@ class SimulMeasures:
   def WindowSimilarityDistribution(self, MeasureAttribute, i0 = None, Windowlength = 20):
     n = len(getattr(self, MeasureAttribute))
     if(Windowlength > n):
-      raise SimulatedTooShortError('windowlength too big/not enough peaks')
+      raise SimulatedTooShortError('windowlength too big/not enough peaks: \n ' + str(self.Simul.path))
     if(i0 == None):
       i0 = n - 1 - Windowlength
     ReferenceWindow = self.window(i0, MeasureAttribute, Windowlength)
@@ -69,7 +70,7 @@ class SimulMeasures:
     mask = distribution < Threshold
     # if no element fulfills this condition
     if(not mask.any()):
-      raise TransientError('This simulation is likely still in a transient stage. ')
+      raise TransientError('This simulation is likely still in a transient stage: \n ' + str(self.Simul.path))
     else:
       self.EndOfTransient = np.argmax(mask)
     # print(self.EndOfTransient)
