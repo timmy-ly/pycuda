@@ -23,8 +23,8 @@ class PrecipitiMeasures(SolutionMeasures):
     self.Base = None
 
 class PrecipitiSimulMeasures(SimulMeasures):
-  def __init__(self):
-    super().__init__()
+  def __init__(self, SimulObj = None):
+    super().__init__(SimulObj = SimulObj)
     self.t = []
     self.dt = None
     self.MaximumThickness = []
@@ -641,8 +641,8 @@ class PrecipitiSimu(Simulation):
     super().__init__(path, start = start, end = end, file = file, 
                     objectclass = objectclass, attribute = attribute)
                     # objectclass = objectclass, attribute = attribute, nCPU = nCPU)
-    self.ZetaMeasures = PrecipitiSimulMeasures()
-    self.Psi2Measures = PrecipitiSimulMeasures()
+    self.ZetaMeasures = PrecipitiSimulMeasures(self)
+    self.Psi2Measures = PrecipitiSimulMeasures(self)
     self.set_SpatialGrid1Dy()
     self.tmin = 0
     self.tminIndex = 0
