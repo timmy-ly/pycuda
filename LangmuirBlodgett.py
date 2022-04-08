@@ -6,6 +6,8 @@ import cuda
 from pathlib import Path, PurePath
 
 attribute = 'imagenumber'
+
+
 class LB(solution):
   def __init__(self, path):
     super().__init__()
@@ -33,7 +35,14 @@ class LB(solution):
     interpolatedobject = interp1d(x,array)
     # evaluate interpolatedobject at newx, newy points
     return interpolatedobject.__call__(newx)
-
+  def l2norm(self, field):
+    l2path = self.path.parent / "frame_l2.dat"
+    print(l2path)
+    if(l2path.exists()):
+      data = cuda.read_l2(l2path)
+      return cuda.mean_l2(data[0], data[1])
+    else:
+      return cuda.l2norm(field)
 class LBSimu(Simulation):
   def __init__(self, path, start = None, end = None, file = 'frame_0001.dat', 
               objectclass = LB, attribute = attribute):
@@ -84,11 +93,11 @@ class LBBranch:
         self.interp_1D(newNx)
         interpolated = True
       if(interpolated):
-        self.l2 = [cuda.l2norm(sol.InterpolatedFields) for sol in self.sols]
+        self.l2 = [sol.l2norm(sol.InterpolatedFields) for sol in self.sols]
       else:
-        self.l2 = [cuda.l2norm(sol.fields[0][0]) for sol in self.sols]
+        self.l2 = [sol.l2norm(sol.fields[0][0]) for sol in self.sols]
     else:
-      self.l2 = [cuda.l2norm(sol.fields[0]) for sol in self.sols]
+      self.l2 = [sol.l2norm(sol.fields[0]) for sol in self.sols]
     self.v = [sol.v for sol in self.sols]
   def add_dirichlet(self):
     for sol in self.sols:

@@ -327,6 +327,18 @@ def l2norm(array):
     ny = 1
   return np.sqrt(np.sum(array*array)/(nx*ny))
 
+def read_l2(filename, **kwargs):
+  array = np.loadtxt(filename, dtype = float, skiprows = 1, unpack = True, **kwargs)
+  print(np.shape(array))
+  return array
+def mean_l2(t,l2, ReltStart = 0.5):
+  mask = t>(t[-1]*ReltStart)
+  t = t[mask]
+  l2 = np.sqrt(l2[mask])
+  dt = t - np.roll(t,1)
+  T = t[-1]-t[0]
+  mean = np.sum(l2[1:]*dt[1:])/T
+  return mean
 
 # interpolate array with Nx, Ny, Lx, Ly to newNx, Newy
 def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
