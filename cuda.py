@@ -13,11 +13,11 @@ class ArgumentsError(Error):
   Attributes:
       message -- explanation of the error"""
   def __init__(self, message):
-      self.message = message
+    self.message = message
 class GridError(Error):
   """Exception raised for mismatched grid parameters."""
   def __init__(self, message):
-      self.message = message
+    self.message = message
 
 # class GridSpacing:
 #   def __init__(self, dx):
@@ -25,6 +25,16 @@ class GridError(Error):
 #     self.dx2 = dx*dx
 #     self.dx3 = dx**3
 #     self.dx4 = dx**4
+
+def create_object_and_handle(SomeClass, *args, handle=lambda e : None, **kwargs):  
+  try:  
+    return SomeClass(*args, **kwargs)  
+  except FileNotFoundError as err: 
+    print("err: ", err)
+    return handle(err)
+def handle(err):
+  return None
+
 
 # methods that apply to all cuda problems
 # add .dat to filepath

@@ -4,6 +4,9 @@ from pathlib import Path,PurePath
 import cuda
 from cuda import convert
 
+
+
+
 class TransientError(Exception):
   """Exception raised for non-existing EndOfTransient attribute."""
   def __init__(self, message):
@@ -153,7 +156,9 @@ class Simulation:
     self.set_filepaths(pattern = pattern)
     Filepaths = self.Filepaths
     objectclass = self.objectclass
-    self.sols = [objectclass(Filepath) for Filepath in Filepaths]
+    create_obj = cuda.create_object_and_handle
+    # self.sols = [objectclass(Filepath) for Filepath in Filepaths]
+    self.sols = [sol for sol in (create_obj(objectclass, Filepath) for Filepath in Filepaths) if sol is not None]
   # sort solution objects and crop if start/end are provided, default attribute is time
   def sort_solutions(self, attribute = attribute):
     # ObjectClass = self.objectclass
