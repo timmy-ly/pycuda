@@ -339,7 +339,6 @@ def l2norm(array):
 
 def read_l2(filename, **kwargs):
   array = np.loadtxt(filename, dtype = float, skiprows = 1, unpack = True, **kwargs)
-  print(np.shape(array))
   return array
 def mean_l2(t,l2, ReltStart = 0.5):
   mask = t>(t[-1]*ReltStart)
