@@ -37,10 +37,10 @@ class LB(solution):
     return interpolatedobject.__call__(newx)
   def l2norm(self, field):
     l2path = self.path.parent / "frame_l2.dat"
-    print(l2path)
     if(l2path.exists()):
       data = cuda.read_l2(l2path)
-      return cuda.mean_l2(data[0], data[1])
+      l2 = cuda.mean_l2(data[0], data[1])
+      return l2
     else:
       return cuda.l2norm(field)
 class LBSimu(Simulation):
