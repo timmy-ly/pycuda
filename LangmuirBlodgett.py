@@ -5,7 +5,7 @@ from solution import solution
 import cuda
 from pathlib import Path, PurePath
 
-attribute = 'imagenumber'
+SortAttribute = 'imagenumber'
 
 
 class LB(solution):
@@ -45,9 +45,9 @@ class LB(solution):
       return cuda.l2norm(field)
 class LBSimu(Simulation):
   def __init__(self, path, start = None, end = None, file = 'frame_0001.dat', 
-              objectclass = LB, attribute = attribute):
+              objectclass = LB, SortAttribute = SortAttribute):
     super().__init__(path, start = start, end = end, file = file, 
-                    objectclass = objectclass, attribute = attribute)
+                    objectclass = objectclass, SortAttribute = SortAttribute)
     self.set_SpatialGrid1Dy()
 
 class LBBranch:
@@ -109,9 +109,9 @@ class LBBranch:
       sol.InterpolatedFields = newdata
 
 
-  # def sort_solutions(self, attribute = attribute):
+  # def sort_solutions(self, SortAttribute = SortAttribute):
   #   ObjectClass = self.objectclass
-  #   self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,attribute))[self.start:self.end]
+  #   self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,SortAttribute))[self.start:self.end]
 class LBCont(Continuation):
   def __init__(self, ParamsCMDArgs, ParamsOther):
     super().__init__(ParamsCMDArgs, ParamsOther)
