@@ -160,6 +160,12 @@ class PhaseData:
     Parameters['n'] = n
     return Parameters
 
+def get_last_file(Top, pattern = "frame_[0-9]*dat", SortAttribute = "imagenumber"):
+  from pathlib import Path, PurePath
+  Top = Path(PurePath(Top))
+  Filepaths = list(Top.glob(pattern))
+  Filepaths = sorted(Filepaths, key = lambda path:GetOnePropertyFromParamFile(path, SortAttribute))
+  return Filepaths[-1]
 
 def GetOnePropertyFromParamFile(path, property):
   with open(path, 'r') as f:
