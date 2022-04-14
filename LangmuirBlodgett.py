@@ -74,7 +74,7 @@ class LBBranch:
     for SimulPath in self.SimulPaths:
       FilePaths = list(SimulPath.glob(self.SolPattern))
       if not FilePaths:
-        print("no finish frame, using SolPattern frame_[0-9]*.dat")
+        print("no finish frame, using SolPattern frame_[0-9]*.dat: ", self.Top)
         FilePaths = list(SimulPath.glob("frame_[0-9]*.dat"))
       # sort by time
       FilePath = sorted(FilePaths, key = lambda filepath:cuda.GetOnePropertyFromParamFile(cuda.dat(filepath), "t"))[-1]
