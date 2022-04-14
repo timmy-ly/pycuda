@@ -23,7 +23,7 @@ class SimulatedTooShortError(Exception):
       self.message = message
 
 # default values
-attribute = 'imagenumber'
+SortAttribute = 'imagenumber'
 class SimulMeasures:
   def __init__(self, SimulObj = None):
     self.Simul = SimulObj
@@ -100,13 +100,13 @@ class FieldsMetaAndNorm:
 class Simulation:
   # constructor
   def __init__(self, path = None, start = None, end = None, file = 'frame_0000.dat', 
-               objectclass = solution, attribute = attribute):
-              #  objectclass = solution, attribute = attribute, nCPU = 1):
-    self.pattern = 'frame_[0-9]*bin'
+               objectclass = solution, SortAttribute = SortAttribute):
+              #  objectclass = solution, SortAttribute = SortAttribute, nCPU = 1):
+    self.pattern = 'frame_[0-9]*dat'
     self.params = {}
     self.filepaths = None
     self.file = file
-    self.attribute = attribute
+    self.SortAttribute = SortAttribute
     self.NumberOfFilepaths = None
     self.sols = None
     self.nof = None
@@ -120,7 +120,7 @@ class Simulation:
       self.path = Path(PurePath(path))
       self.readparams(filepath = self.path)
       self.set_solutions(pattern = self.pattern)
-      self.sort_solutions(attribute = self.attribute)
+      self.sort_solutions(SortAttribute = self.SortAttribute)
       self.set_time()
     else:
       self.path = None
@@ -160,9 +160,9 @@ class Simulation:
     # self.sols = [objectclass(Filepath) for Filepath in Filepaths]
     self.sols = [sol for sol in (create_obj(objectclass, Filepath) for Filepath in Filepaths) if sol is not None]
   # sort solution objects and crop if start/end are provided, default attribute is time
-  def sort_solutions(self, attribute = attribute):
+  def sort_solutions(self, SortAttribute = SortAttribute):
     # ObjectClass = self.objectclass
-    self.sols = sorted(self.sols, key = lambda object:getattr(object,attribute))[self.start:self.end]
+    self.sols = sorted(self.sols, key = lambda object:getattr(object,SortAttribute))[self.start:self.end]
   def ExtractSolsSubset(self, ListOfIndices):
     SolsSubset = []
     for i in ListOfIndices:

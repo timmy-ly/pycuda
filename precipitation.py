@@ -5,7 +5,7 @@ from simulation import Simulation, SimulMeasures, TransientError, IndexWindowErr
 from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
 # from scipy.signal import find_peaks
 
-attribute = 'imagenumber'
+SortAttribute = 'imagenumber'
 class OnlyOneMinimumError(Exception):
   pass
 
@@ -636,11 +636,11 @@ class precipiti(solution):
   
 class PrecipitiSimu(Simulation):
   def __init__(self, path, start = None, end = None, file = 'frame_0000.dat', 
-              objectclass = precipiti, attribute = attribute):
-              # objectclass = precipiti, attribute = attribute, nCPU = 1):
+              objectclass = precipiti, SortAttribute = SortAttribute):
+              # objectclass = precipiti, SortAttribute = SortAttribute, nCPU = 1):
     super().__init__(path, start = start, end = end, file = file, 
-                    objectclass = objectclass, attribute = attribute)
-                    # objectclass = objectclass, attribute = attribute, nCPU = nCPU)
+                    objectclass = objectclass, SortAttribute = SortAttribute)
+                    # objectclass = objectclass, SortAttribute = SortAttribute, nCPU = nCPU)
     self.ZetaMeasures = PrecipitiSimulMeasures(self)
     self.Psi2Measures = PrecipitiSimulMeasures(self)
     self.set_SpatialGrid1Dy()
