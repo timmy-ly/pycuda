@@ -113,7 +113,10 @@ class PhaseData:
   # cannot sort dictionary, must copy keys and then sort
   def Sort(self):
     # I think this is the only part that I have not made independent of dimension yet
-    return sorted(self.DataPoints.keys(), key=lambda x: (x[0], x[1]))
+    if(len(self.ParameterStrs)==2):
+      return sorted(self.DataPoints.keys(), key=lambda x: (x[0], x[1]))
+    elif(len(self.ParameterStrs)==1):
+      return sorted(self.DataPoints.keys(), key=lambda x: (x[0]))
 
   # check if DataPaths contains simulations that are not present in PhaseDataName.dat
   # also check if existing entries have less frames
