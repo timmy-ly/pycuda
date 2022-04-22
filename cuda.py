@@ -396,6 +396,10 @@ def curvature(fields, dx):
          + (f(0,1) - f(0,0))/np.sqrt( (f(0,1) - f(0,0))**2 + ((f(1,1) + f(1,0) - f(-1,1) - f(-1,0))**2)/16.0 )
          - (f(0,0) - f(0,-1))/np.sqrt( (f(0,0) - f(0,-1))**2 + ((f(1,-1) + f(1,0) - f(-1,-1) - f(-1,0))**2)/16.0 ) )/dx
 
+# 2nd order
+def dx2_m11(fields, dx):
+  f = fTemplate(fields)
+  return ( f(1,0) - f(-1,0) )/2.0/dx
 # 4th order
 # dy fdm 4th order, forward, copied from cuda code
 def dy4_04(fields, dx):
@@ -404,7 +408,7 @@ def dy4_04(fields, dx):
 # dx fdm 4th order, center
 def dx4_m22(fields, dx):
   f = fTemplate(fields)
-  return (-f(0,2) + 8.0*f(0,1) - 8.0*f(0,-1) + f(0,-2) )/12.0/dx
+  return (-f(2,0) + 8.0*f(1,0) - 8.0*f(-1,0) + f(-2,0) )/12.0/dx
 # dy fdm 4th order, center, copied from cuda code
 def dy4_m22(fields, dx):
   f = fTemplate(fields)
