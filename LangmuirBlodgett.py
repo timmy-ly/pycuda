@@ -98,7 +98,15 @@ class LBBranch:
         self.l2 = [sol.l2norm(sol.fields[0][0]) for sol in self.sols]
     else:
       self.l2 = [sol.l2norm(sol.fields[0]) for sol in self.sols]
-    self.v = [sol.v for sol in self.sols]
+    self.l2 = np.array(self.l2)
+    self.set_v()
+  def set_dcdx_max(self):
+    self.set_v()
+    dx2_m11 = cuda.dx2_m11
+    self.dcdx_max = [np.max(np.abs(dx2_m11(sol.fields[0], sol.dx()))) for sol in self.sols]
+    self.dcdx_max = np.array(self.dcdx_max)
+  def set_v(self):
+    self.v = np.array([sol.v for sol in self.sols])
   def add_dirichlet(self):
     for sol in self.sols:
       sol.add_dirichlet()    
