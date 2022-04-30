@@ -663,10 +663,11 @@ class PrecipitiSimu(Simulation):
 
     self.ZetaOfT = np.array([sol.zeta1D[self.MPIdx] for sol in self.sols[self.tminIndex:]])
     try:
-      PeakIndices, properties = cuda.FindHighestPeaks1D(
-                                self.ZetaOfT, FractionOfMaximumProminence, 
-                                PeakSamples = PeakSamples, **FindPeaksKwargs)
-      if(np.all(properties["prominences"]<1e-3)):
+      PeakIndices, properties = cuda.FindHighestPeaks1D(self.ZetaOfT, FractionOfMaximumProminence, PeakSamples = PeakSamples, **FindPeaksKwargs)
+      Prominences = properties["prominences"]
+      # DiffProminences = Prominences[1:] - Prominences[:-1]
+      if(np.any(Prominences<1e-3)):
+        # deposit may be flat if there are very small prominences
         print(self.path, "deposit may be flat")
     except ValueError:
       raise SimulatedTooShortError('no Peaks found in zeta. Solution could be stationary \
