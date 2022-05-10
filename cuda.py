@@ -295,6 +295,82 @@ def readbalance(filepath, n=0):
   # 1 to n, np.s_ is a slice, last argument is axis
   return np.delete(data,np.s_[1:-n],1)
 
+def get_field_dims(field):
+  Nx, Ny = 1, 1
+  if(len(np.shape(field))==2):
+    Nx, Ny = np.shape(field)
+  elif(len(np.shape(field))==1):
+    Ny = len(field)
+  return Nx, Ny
+
+#
+def cut_field_y(field, cut = 0.25):
+  Nx, Ny = get_field_dims(field)
+  Ny_up = int(Ny*(1-cut))
+  Ny_down = int(Ny*cut)
+  return field[:,Ny_down:]
+def shift_field(field):
+  return field - np.mean(field)
+
+# fourier stuff
+# create 2d arrays for wavenumbers, use fftshift to have intuitive order (aka from negative to positive values)
+def set_k(field, dx, dy):
+  Nx, Ny = get_field_dims(field)
+  ky, kx = np.meshgrid(np.fft.fftshift(np.fft.fftfreq(Ny,dy/2.0/np.pi)), np.fft.fftshift(np.fft.fftfreq(Nx,dx/2.0/np.pi)))
+  return kx, ky
+def fft_field(field):
+  # find the complex fft -- shift to put 0 wavenumber at the center
+  return np.fft.fftshift(np.fft.fft2(field))
+def normalize_fft(field):
+  FFTMag = np.abs(field)
+  return FFTMag/np.amax(FFTMag)
+def get_fft_local_max_mask_2d(field, Threshold, **kwargs):
+  # one could probably use np.where instead of masks
+  import scipy.ndimage as ndimage
+  import scipy.ndimage.filters as filters
+  # find the local 2d maxima of the fourier spectrum, find the fundamental k in particular
+  # legacy, needed for mode = "constant" which we usually do not use
+  const_value = np.max(field)
+  # find all local maxima?
+  field_max = filters.maximum_filter(field, cval = const_value, **kwargs)
+  mask_max = (field == field_max)
+  # find all local minima?
+  field_min = filters.minimum_filter(field, cval = const_value, **kwargs)
+  # only take those extrema that are relatively large, meaning larger than threshold
+  diff = ((field_max - field_min) > Threshold)
+  mask_max[diff == 0] = 0
+  return mask_max
+# only consider frequencies positive in y
+def filter_pos_yfreq(field, mask_max, kx, ky):
+  FilteredMask = filter_yfreq_from_mask(field, mask_max)
+  filtered_kx, filtered_ky = filter_yfreq_from_k(kx, ky)
+  # FilteredField = filter_yfreq_from_field(field)
+  return filtered_kx, filtered_ky, FilteredMask
+def filter_yfreq_from_field(field):
+  n, m = np.shape(field)
+  return field[:,m//2:]
+def filter_yfreq_from_mask(field, mask_max):
+  n, m = np.shape(field)
+  return mask_max[:,m//2:]
+def filter_yfreq_from_k(kx,ky):
+  n, m = np.shape(ky)
+  ky_half = ky[:,m//2:]
+  kx_half = kx[:,m//2:]
+  return kx_half, ky_half
+# select n smallest frequencies
+def filter_smallest_k(mask_max, kx, ky,n = 2):
+  k = np.sqrt(kx*kx + ky*ky)
+  # k at local power maxima
+  kMaxPower = k[mask_max]
+  # smallest k of these maxima
+  kmin = np.partition(kMaxPower, 1)[:n]
+  # create new mask_max by comparing these kmin with k
+  maskkMin = np.isin(k, kmin)
+  # this is true for all k that have the same magnitude as these kmin which means that there may be "new" local maxima
+  # which is why one needs to combine this mask with the old one
+  return (maskkMin & mask_max)
+
+
 # calculate difference between two solutions
 def DifferenceSols(sol1, sol2):
   if(sol1.Ny != sol1.Ny):
