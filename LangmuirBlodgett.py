@@ -20,8 +20,31 @@ class LB(solution):
       self.set_SpatialGrid1Dy()
       self.fields = cuda.readbin(self)
       self.nof = len(self.fields)
+      self.set_c()
+      self.Ny_up = self.Ny
+      self.Ny_down = self.Ny
+      self.cut = 0
+      self.cCut = self.c
+      self.cCutShift = self.cCut
+  def set_cCutShift(self):
+    self.cCut = cuda.cut_field_y(self.c)
+    self.cCutShift = cuda.shift_field(self.cCut)
   def add_dirichlet(self):
     self.fields = np.insert(self.fields, 0, self.c0, axis = -1)
+  def set_c(self):
+    self.c = self.fields[0]
+
+  def get_k(self, field):
+    dx = self.dx()
+    dy = dx
+    kx, ky = cuda.set_k(field, dx, dy)
+    return kx, ky
+  def get_fft(self, field):
+    field_fft = cuda.fft_field(field)
+    return cuda.normalize_fft(field_fft)
+
+
+
   def interp_1D(self, array, Nx, Lx, newNx):
     from scipy.interpolate import interp1d
     dx = Lx/Nx
@@ -116,10 +139,23 @@ class LBBranch:
       newdata = sol.interp_1D(data, sol.Ny, sol.Ly, newNy)
       sol.InterpolatedFields = newdata
 
+class LBBranchLegacy(LBBranch):
+  # used for primitively continued DNS branches with older directory structure, aka no saved solution frames, only final frames + solution measures in the top folder
+  def __init__(self, ControlParam, Top, SolPattern = 'Lx*.bin'):
+    super().__init__(ControlParam, Top, "dummy", SolPattern = SolPattern)
+  def set_sols(self):
+    # print("overwritten set_sols")
+    self.FilePathsToSols()
+  def FilePathsToSols(self):
+    # also, sorted by controlparam already, dont need sort_solutions method
+    FilePaths = list(self.Top.glob(self.SolPattern))
+    if not FilePaths:
+      print("FilePaths empty, check SolPattern and Tops ", self.Top)
+    # sort by ControlParam
+    FilePaths = sorted(FilePaths, key = lambda filepath:cuda.GetOnePropertyFromParamFile(cuda.dat(filepath), self.ControlParam))
+    self.sols = [LB(FilePath) for FilePath in FilePaths]
+    # print(len(self.sols))
 
-  # def sort_solutions(self, SortAttribute = SortAttribute):
-  #   ObjectClass = self.objectclass
-  #   self.sols = sorted(self.sols, key = lambda ObjectClass:getattr(ObjectClass,SortAttribute))[self.start:self.end]
 class LBCont(Continuation):
   def __init__(self, ParamsCMDArgs, ParamsOther):
     super().__init__(ParamsCMDArgs, ParamsOther)
