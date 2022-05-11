@@ -363,7 +363,12 @@ def filter_smallest_k(mask_max, kx, ky,n = 2):
   # k at local power maxima
   kMaxPower = k[mask_max]
   # smallest k of these maxima
-  kmin = np.partition(kMaxPower, 1)[:n]
+  n = np.min([len(kMaxPower),n])
+  kmin = np.sort(kMaxPower)[:n]
+  # if(len(kMaxPower)>1):
+  #   kmin = np.partition(kMaxPower, 1)[:n]
+  # else:
+  #   kmin = kMaxPower
   # create new mask_max by comparing these kmin with k
   maskkMin = np.isin(k, kmin)
   # this is true for all k that have the same magnitude as these kmin which means that there may be "new" local maxima
