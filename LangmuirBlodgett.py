@@ -161,6 +161,8 @@ class LBCont(Continuation):
   def __init__(self, ParamsCMDArgs, ParamsOther):
     super().__init__(ParamsCMDArgs, ParamsOther)
   def get_Subdir(self, args):
-    SubdirSuffix = ("Lx{Lx:g}_Ly{Ly:g}_Nx{Nx:d}_Ny{Ny:d}_eps{epsilontol:g}_noise{noise:g}_ys{ys:g}_ls{ls:g}_c0{c0:g}_v{v:g}"
-    .format(**args))
+    if(args["vamplitude"]==0):
+      SubdirSuffix = ("Lx{Lx:g}_Ly{Ly:g}_Nx{Nx:d}_Ny{Ny:d}_eps{epsilontol:g}_noise{noise:g}_ys{ys:g}_ls{ls:g}_c0{c0:g}_v{v:g}".format(**args))
+    else:
+      SubdirSuffix = ("Lx{Lx:g}_Ly{Ly:g}_Nx{Nx:d}_Ny{Ny:d}_eps{epsilontol:g}_noise{noise:g}_ys{ys:g}_ls{ls:g}_c0{c0:g}_v{v:g}_A{vamplitude:g}_w{vperiod:g}".format(**args))
     return self.SubdirPrefix + "_" + SubdirSuffix
