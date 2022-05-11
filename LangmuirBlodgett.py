@@ -26,6 +26,7 @@ class LB(solution):
       self.cut = 0
       self.cCut = self.c
       self.cCutShift = self.cCut
+  #FFT: source of 0-mode: non-zero mean of the pattern (k=0 is a constant fourier factor--> constant added to the pattern --> peak added in FT)
   def set_cCutShift(self):
     self.cCut = cuda.cut_field_y(self.c)
     self.cCutShift = cuda.shift_field(self.cCut)
