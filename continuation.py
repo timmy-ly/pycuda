@@ -57,7 +57,7 @@ class Continuation():
     ArgsStr = "../" + self.executable + " "
     for key in args.keys():
       ArgsStr += "-{key:} {value:} ".format(key = key, value = args[key])
-    ArgsStr += "-in " + self.IC + " "
+    # ArgsStr += "-in " + self.IC + " "
     if(self.FixedTimestep):
       ArgsStr += "-outputDT {outputDT:d} ".format(outputDT = self.ParamsOther["outputDT"])
     else:
