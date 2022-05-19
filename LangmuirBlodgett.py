@@ -77,7 +77,7 @@ class LBSimu(Simulation):
     # adding the dirichlet BC matches the nodes a lot better
     self.add_dirichlet()
     self.l2path = list(self.path.glob("*l2.dat"))[0]
-    # print(l2path)
+    # print(self.l2path.exists())
     if(self.l2path.exists()):
       _, self.l2 = cuda.read_l2(self.l2path)
     else:
