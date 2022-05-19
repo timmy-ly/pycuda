@@ -73,6 +73,18 @@ class LBSimu(Simulation):
     super().__init__(path, start = start, end = end, file = file, 
                     objectclass = objectclass, SortAttribute = SortAttribute)
     self.set_SpatialGrid1Dy()
+  def set_l2(self):
+    # adding the dirichlet BC matches the nodes a lot better
+    self.add_dirichlet()
+    self.l2path = list(self.path.glob("*l2.dat"))[0]
+    # print(l2path)
+    if(self.l2path.exists()):
+      _, self.l2 = cuda.read_l2(self.l2path)
+    else:
+      self.l2 = [sol.l2norm(sol.fields[0]) for sol in self.sols]
+  def add_dirichlet(self):
+    for sol in self.sols:
+      sol.add_dirichlet()   
 
 class LBBranch:
   # def __init__(self, ControlParam, Top, SimulPattern, SolPattern = 'frame.bin'):
