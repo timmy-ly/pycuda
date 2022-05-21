@@ -324,6 +324,19 @@ def fft_field(field):
 def normalize_fft(field):
   FFTMag = np.abs(field)
   return FFTMag/np.amax(FFTMag)
+def argmax2d(field, n = 2):
+  # partition the field, meaning shift the n largest values to the end of the flattened array and all the others to the left. the partitions themselves are not sorted! then return the new indices, same shape as field, here: flattened
+  # None is important, so that it deals with the flattened array
+  # you could also flatten the array by hand which would be more robust
+  index_flattened = np.argpartition(field, -n, axis=None)[-n:]
+  # sort indices
+  index_flattened = index_flattened[np.argsort(field.flatten()[index_flattened], axis = None)]
+  # undo the flattening so to say
+  # returns two arrays: xindices, yindices
+  idx_x, idx_y = np.unravel_index(index_flattened, np.array(field).shape)
+  indices = np.array([idx_x, idx_y]).T
+  return indices
+
 def get_fft_local_max_mask_2d(field, Threshold, **kwargs):
   # one could probably use np.where instead of masks
   import scipy.ndimage as ndimage
