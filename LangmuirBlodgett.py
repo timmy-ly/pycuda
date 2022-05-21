@@ -9,7 +9,7 @@ SortAttribute = 'imagenumber'
 
 
 class LB(solution):
-  def __init__(self, path):
+  def __init__(self, path= None):
     super().__init__()
     self.dtype = 'float'
     if path is not None:
@@ -24,8 +24,8 @@ class LB(solution):
       self.Ny_up = self.Ny
       self.Ny_down = self.Ny
       self.cut = 0
-      self.cCut = self.c
-      self.cCutShift = self.cCut
+      self.cCut = self.c #c after cutoff
+      self.cCutShift = self.cCut #c after shifting by its mean
   #FFT: source of 0-mode: non-zero mean of the pattern (k=0 is a constant fourier factor--> constant added to the pattern --> peak added in FT)
   def set_cCutShift(self):
     self.cCut = cuda.cut_field_y(self.c)
