@@ -334,8 +334,8 @@ def argmax2d(field, n = 2):
   # undo the flattening so to say
   # returns two arrays: xindices, yindices
   idx_x, idx_y = np.unravel_index(index_flattened, np.array(field).shape)
-  indices = np.array([idx_x, idx_y]).T
-  return indices
+  index_pairs = np.array([idx_x, idx_y]).T
+  return index_pairs
 
 def get_fft_local_max_mask_2d(field, Threshold, **kwargs):
   # one could probably use np.where instead of masks
@@ -343,15 +343,20 @@ def get_fft_local_max_mask_2d(field, Threshold, **kwargs):
   import scipy.ndimage.filters as filters
   # find the local 2d maxima of the fourier spectrum, find the fundamental k in particular
   # legacy, needed for mode = "constant" which we usually do not use
-  const_value = np.max(field)
+  const_value = 0
   # find all local maxima?
   field_max = filters.maximum_filter(field, cval = const_value, **kwargs)
   mask_max = (field == field_max)
   # find all local minima?
   field_min = filters.minimum_filter(field, cval = const_value, **kwargs)
   # only take those extrema that are relatively large, meaning larger than threshold
+  test = field_max - field_min
   diff = ((field_max - field_min) > Threshold)
-  mask_max[diff == 0] = 0
+  # print(np.where(diff))
+  # print(np.all(diff==0))
+  # print(~diff)
+  mask_max[~diff] = False
+  # print(np.any(mask_max))
   return mask_max
 # only consider frequencies positive in y
 def filter_pos_yfreq(field, mask_max, kx, ky):
