@@ -350,7 +350,6 @@ def get_fft_local_max_mask_2d(field, Threshold, **kwargs):
   # find all local minima?
   field_min = filters.minimum_filter(field, cval = const_value, **kwargs)
   # only take those extrema that are relatively large, meaning larger than threshold
-  test = field_max - field_min
   diff = ((field_max - field_min) > Threshold)
   # print(np.where(diff))
   # print(np.all(diff==0))
@@ -377,9 +376,16 @@ def filter_yfreq_from_k(kx,ky):
   return kx_half, ky_half
 # select n smallest frequencies
 def filter_smallest_k(mask_max, kx, ky,n = 2):
-  k = np.sqrt(kx*kx + ky*ky)
+  k = get_k(kx,ky)
   # k at local power maxima
+  kxMaxPower = kx[mask_max]
+  kyMaxPower = ky[mask_max]
   kMaxPower = k[mask_max]
+  # if the k with maximum power have vanishing y-components: vertical stripes or homogeneous deposit: only select positive kx
+  PositivekxMask = np.ones_like(kMaxPower, dtype = bool)
+  if(vanishing_elements(kyMaxPower)):
+    PositivekxMask = (kxMaxPower>0)
+  kMaxPower = kMaxPower[PositivekxMask]
   # smallest k of these maxima
   n = np.min([len(kMaxPower),n])
   kmin = np.sort(kMaxPower)[:n]
@@ -392,6 +398,27 @@ def filter_smallest_k(mask_max, kx, ky,n = 2):
   # this is true for all k that have the same magnitude as these kmin which means that there may be "new" local maxima
   # which is why one needs to combine this mask with the old one
   return (maskkMin & mask_max)
+
+def vanishing_elements(array, eps = 1e-6):
+  return np.all(np.abs(array)<eps)
+
+def approx_equal_elements_indices(array, ReferenceValue, eps=1e-4):
+  # nonzero returns tuple of shape (1,array.shape)
+  return np.nonzero(np.abs(array - ReferenceValue)<eps)[0]
+
+def get_k(kx,ky):
+  return np.sqrt(kx*kx + ky*ky)
+
+def get_ky_of_smallest_k(kx,ky):
+  k = get_k(kx,ky)
+  # get kx and ky of smallest k
+  # get index of smallest k
+  i = np.argmin(k)
+  ix,iy = flat_index_to_tuple(i,np.shape(k))
+  return ky[ix,iy]
+
+def flat_index_to_tuple(index, shape):
+  return np.unravel_index(index, shape)
 
 
 # calculate difference between two solutions
