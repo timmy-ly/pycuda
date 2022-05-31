@@ -385,7 +385,9 @@ def filter_smallest_k(mask_max, kx, ky,n = 2):
   PositivekxMask = np.ones_like(kMaxPower, dtype = bool)
   if(vanishing_elements(kyMaxPower)):
     PositivekxMask = (kxMaxPower>0)
-  kMaxPower = kMaxPower[PositivekxMask]
+    # only filter the positive kx if the kx dont vanish as well (kx and ky vanish means no pattern, homogeneous)
+    if(not vanishing_elements(kxMaxPower)):
+      kMaxPower = kMaxPower[PositivekxMask]
   # smallest k of these maxima
   n = np.min([len(kMaxPower),n])
   kmin = np.sort(kMaxPower)[:n]
@@ -397,9 +399,10 @@ def filter_smallest_k(mask_max, kx, ky,n = 2):
   maskkMin = np.isin(k, kmin)
   # this is true for all k that have the same magnitude as these kmin which means that there may be "new" local maxima
   # which is why one needs to combine this mask with the old one
+  # print(np.any((maskkMin & mask_max)))
   return (maskkMin & mask_max)
 
-def vanishing_elements(array, eps = 1e-6):
+def vanishing_elements(array, eps = 1e-5):
   return np.all(np.abs(array)<eps)
 
 def approx_equal_elements_indices(array, ReferenceValue, eps=1e-4):
