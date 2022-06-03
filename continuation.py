@@ -61,7 +61,7 @@ class Continuation():
     if(self.FixedTimestep):
       ArgsStr += "-outputDT {outputDT:d} ".format(outputDT = self.ParamsOther["outputDT"])
     else:
-      ArgsStr += "-pre " + self.ParamsOther["pre"] + " "
+      ArgsStr += "-pre {pre:d} ".format(pre = self.ParamsOther["pre"])
     ArgsStr+= "-t 0 "
     if(self.FirstRun or (not self.PrimCont)):
       ArgsStr += "-in " + self.IC + " "
