@@ -39,10 +39,12 @@ def handle(err):
 # methods that apply to all cuda problems
 # add .dat to filepath
 def dat(filepath):
+  filepath = Path(PurePath(filepath))
   return filepath.with_suffix('.dat')
 
 # add .bin to filepath
 def bin(filepath):
+  filepath = Path(PurePath(filepath))
   return filepath.with_suffix('.bin')
 
 def convert(val):
@@ -488,12 +490,12 @@ def mean_l2(t,l2, ReltStart = 0.5):
   return mean
 
 # interpolate array with Nx, Ny, Lx, Ly to newNx, Newy
-def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy):
+def interpolate(array, Nx, Ny, Lx, Ly, newNx, newNy, xmin = 0, ymin = 0):
   from scipy.interpolate import RectBivariateSpline as rbs
-  x = np.linspace(0,Lx,Nx)
-  y = np.linspace(0,Ly,Ny)
-  newx = np.linspace(0,Lx,newNx)
-  newy = np.linspace(0,Ly,newNy)
+  x = np.linspace(xmin,Lx,Nx)
+  y = np.linspace(ymin,Ly,Ny)
+  newx = np.linspace(xmin,Lx,newNx)
+  newy = np.linspace(ymin,Ly,newNy)
   interpolatedobject = rbs(x,y,array)
   # evaluate interpolatedobject at newx, newy points
   return interpolatedobject.__call__(newx,newy)
