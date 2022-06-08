@@ -8,6 +8,37 @@ from pathlib import Path, PurePath
 SortAttribute = 'imagenumber'
 
 
+def mat_to_cuda_bin(path, outpath, CudaNx, CudaNy):
+  from pyp2p import loadmat, p_to_sol_field
+  path = Path(PurePath(path))
+  p = loadmat(path)['p']
+  dim = 2
+  if(p.ly==0):
+    dim = 1
+  field = p_to_sol_field(p, dim = dim)
+  # transpose
+  field = field.T
+  # get relevant grid parameters
+  oldNx = p.ny
+  oldNy = p.nx
+  Lx = 2*p.ly
+  Ly = 2*p.lx
+  dx = Lx/(oldNx-1)
+  dy = Ly/(oldNy-1)
+  # interpolate
+  field = cuda.interpolate(field, oldNx, oldNy, Lx, Ly, CudaNx, CudaNy+1, xmin = -dx, ymin = -dy)
+  # drop y=-dy, aka the dirichlet grid point
+  field = field[:,1:]
+  # turn into single precision
+  field = field.astype('float32')
+  # write to file
+  field.tofile(outpath)
+
+
+
+
+
+
 class LB(solution):
   def __init__(self, path= None):
     super().__init__()
