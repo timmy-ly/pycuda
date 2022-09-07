@@ -974,7 +974,7 @@ class XuMeakin(solution):
     # self.lapcurv = dyyphi/(1.0 + dxphi/dyphi*dxphi/dyphi) + dxxphi/(1.0 + dyphi/dxphi*dyphi/dxphi) + 2.0*dxyphi/(dxphi/dyphi + dyphi/dxphi)
 
 class XuMeakinSimu(Simulation):
-  def __init__(self, path, start = None, end = None):
+  def __init__(self, path, start = None, end = None, **kwargs):
     super().__init__(path, start = start, end = end, 
                     objectclass = XuMeakin)
 
