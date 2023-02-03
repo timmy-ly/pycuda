@@ -4,6 +4,7 @@ import cuda
 from simulation import Simulation, SimulMeasures, TransientError, IndexWindowError, SimulatedTooShortError
 from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
 # from scipy.signal import find_peaks
+import warnings
 
 
 SortAttribute = 'imagenumber'
@@ -98,16 +99,16 @@ class precipiti(solution):
       if(self.nof >1):
         self.set_psi1()
         self.set_psi2()
-        # catch RuntimeWarning due to nan
-        # import warnings
+        # # catch RuntimeWarning due to nan
         # warnings.filterwarnings("error")
-        # 
         # try:
         #   self.set_C()
         # except RuntimeWarning:
         #   print(str(self.path))
         #   print(np.max(self.fields[0]), np.min(self.fields[0]))
         #   print(np.max(self.fields[1]), np.min(self.fields[1]))
+        # # restore normal behavior
+        # warnings.resetwarnings()
         self.set_C()
       if(self.nof >2):
         self.set_phi()
