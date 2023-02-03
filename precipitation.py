@@ -5,6 +5,7 @@ from simulation import Simulation, SimulMeasures, TransientError, IndexWindowErr
 from solution import NoExtremaError, SolutionMeasures, solution, FieldProps
 # from scipy.signal import find_peaks
 
+
 SortAttribute = 'imagenumber'
 class OnlyOneMinimumError(Exception):
   pass
@@ -97,6 +98,16 @@ class precipiti(solution):
       if(self.nof >1):
         self.set_psi1()
         self.set_psi2()
+        # catch RuntimeWarning due to nan
+        # import warnings
+        # warnings.filterwarnings("error")
+        # 
+        # try:
+        #   self.set_C()
+        # except RuntimeWarning:
+        #   print(str(self.path))
+        #   print(np.max(self.fields[0]), np.min(self.fields[0]))
+        #   print(np.max(self.fields[1]), np.min(self.fields[1]))
         self.set_C()
       if(self.nof >2):
         self.set_phi()
