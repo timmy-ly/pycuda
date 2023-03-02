@@ -944,8 +944,9 @@ class XuMeakin(solution):
       self.readparams(self.path)
       self.set_coordinates()
       self.fields = cuda.readbin(self)
-      if(self.rhs_variant == 'precon'):
-        self.fields[1] = -np.tanh(self.fields[1]/np.sqrt(2))
+      if(hasattr(self, "rhs_variant")):
+        if(self.rhs_variant == 'precon'):
+          self.fields[1] = -np.tanh(self.fields[1]/np.sqrt(2))
       self.nof = len(self.fields)
       if(self.nof >1):
         self.set_C()
