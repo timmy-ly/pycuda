@@ -117,7 +117,7 @@ class precipiti(solution):
         self.set_zeta1D()
       self.set_h()
       # self.set_dfdh()
-      # self.set_disjp()
+      self.set_disjp()
       self.zeta1DProps = FieldProps()
       self.Measures = PrecipitiMeasures()
     else:
